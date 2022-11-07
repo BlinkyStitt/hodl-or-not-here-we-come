@@ -1,5 +1,4 @@
 import arrow
-from brownie import chain, Contract
 
 from src.blocks import find_block_at
 from src.tokens import get_token_contract
@@ -33,9 +32,18 @@ def main(start_date="2022-01-01", end_date="now"):
 
     # simple eth hold
     end_wei = strategy.hodl_eth(start_block, usdc, start_usdc_wei, end_block)
-    print("strategy: hodl ETH =", end_wei / usdc_decimal_shift)
+
+    if end_wei:
+        print("strategy: hodl ETH =", end_wei / usdc_decimal_shift)
+        # TODO: helper function for printing profits/losses with pretty colors
 
     # strategy: deposit into yearn USDC vault
+    end_wei = strategy.yearn_usdc_vault(start_block, start_usdc_wei, end_block)
+
+    if end_wei:
+        print("strategy: yearn USDC Vault =", end_wei / usdc_decimal_shift)
+        # TODO: helper function for printing profits/losses with pretty colors
+
     # strategy: deposit into AAVE v1
     # strategy: deposit into AAVE v2
     # strategy: deposit into Compound
