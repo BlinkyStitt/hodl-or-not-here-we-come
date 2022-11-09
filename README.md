@@ -29,3 +29,9 @@ Launch an interactive shell after the script runs:
 ```bash
 brownie run --network mainnet compare main "2021-01-01" "now" -I
 ```
+
+# Todo
+
+- [ ] Include farming rewards
+- [ ] Include gas costs
+- [ ] debug logger
