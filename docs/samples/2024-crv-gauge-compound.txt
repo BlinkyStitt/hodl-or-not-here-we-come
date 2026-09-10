@@ -1,0 +1,56 @@
+HODL or Not — historical estimate
+Initial USD per asset: 1000000
+USD = USDC (0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48); decimals=6
+BTC = WBTC (0x2260fac5e5542a773aa44fbcfedf7c193bc2c599); decimals=8
+ETH = ETH (0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee); decimals=18
+CRV = CRV (0xd533a949740bb3306d119cc777fa900ba034cd52); decimals=18
+Start block: 18994253 0x0aade08c542b94c7b138b62cb80648bd4e3042f22bb388241672e43737ecf0a1 2024-01-12T23:59:59+00:00
+End block: 19422438 0x05c9e3334c1e672705cc80d0417c9c713a5a3b80c903e7bc953e5edc648f3721 2024-03-12T23:59:59+00:00
+Ethereum mainnet; timestamps use UTC and the last block at or before each time.
+Assets are already held at entry. USD=USDC, BTC=WBTC, ETH=native ETH, CRV=CRV.
+Each starting asset has the same initial USD value; token amounts round down.
+Historical prices must be at or before the block timestamp and at most 24 hours old.
+One entry; monthly observations are hypothetical exits. Only scheduled compounds change shares.
+Fixed vault and gauge; no migration. No veCRV boost. Final exit sells remaining rewards.
+The added position does not change later market activity, supplies, or reward integrals.
+Routes cover the catalog Curve pools and Uniswap V3, with at most two swaps.
+Swap execution includes fees and price impact; these are not exchange-wide best-route claims.
+Gas units come from local fork receipts, including approvals, wraps, swaps, and protocol actions.
+Gas funding debits equivalent asset value at historical prices; it is an estimate.
+Gas price uses the block's median priority fee plus base fee, or pre-London median gasPrice.
+An even-count median rounds up to the nearest wei. No current gas prices are substituted.
+Yearn V2 withdrawals use maxLoss=1 basis point. V3 uses the deployed redeem defaults.
+Yearn share value already includes reported fees and rewards. No extra yield is added.
+Unavailable or incomplete rows are not complete net outcomes; blank values do not mean zero.
+
+Final comparison
+Strategy                  | Asset | Status   | Start quantity             | End quantity               | End USD                          | Net %                             | vs hold USD                      | Gas USD                  | Accounting USD
+hold-USD                  | USD   | complete | 1000413.170639             | 1000413.170639             | 1000192.079328288781             | 0.019207932828878100              | 0                                | 0                        | 1000192.079328288781
+hold-BTC                  | BTC   | complete | 23.65128544                | 23.65128544                | 1688938.29327040                 | 68.8938293270400                  | 0                                | 0                        | 1688938.29327040
+hold-ETH                  | ETH   | complete | 400.442088065224007304     | 400.442088065224007304     | 1593078.7589498806682575032      | 59.3078758949880668257503200      | 0                                | 0                        | 1593078.7589498806682575032
+hold-CRV                  | CRV   | complete | 1836449.482029423593601075 | 1836449.482029423593601075 | 1523202.620980700752393352435100 | 52.3202620980700752393352435100   | 0                                | 0                        | 1523202.620980700752393352435100
+cash-USD                  | cash  | complete | 1000000                    | 1000000                    | 1000000                          | 0                                 | 0                                | 0                        | 1000000
+curve-crv-cvxcrv-v2-gauge | CRV   | complete | 1836449.482029423593601075 | 1714445.784533467116373509 | 1422009.338174024563399446822852 | 42.200933817402456339944682285200 | -101193.282806676188993905612248 | 269.58118846776165613210 |
+
+Monthly values at 2024-02-13T00:00:00+00:00
+Strategy                  | Asset | Status   | Start quantity             | End quantity               | End USD                         | Net %                             | vs hold USD                    | Gas USD                  | Accounting USD
+hold-USD                  | USD   | complete | 1000413.170639             | 1000413.170639             | 1000123.05081951469             | 0.01230508195146900               | 0                              | 0                        | 1000123.05081951469
+hold-BTC                  | BTC   | complete | 23.65128544                | 23.65128544                | 1181192.49744448                | 18.11924974444800                 | 0                              | 0                        | 1181192.49744448
+hold-ETH                  | ETH   | complete | 400.442088065224007304     | 400.442088065224007304     | 1064371.06565648475917395896    | 6.43710656564847591739589600      | 0                              | 0                        | 1064371.06565648475917395896
+hold-CRV                  | CRV   | complete | 1836449.482029423593601075 | 1836449.482029423593601075 | 959032.484954887618473946987575 | -4.096751504511238152605301242500 | 0                              | 0                        | 959032.484954887618473946987575
+cash-USD                  | cash  | complete | 1000000                    | 1000000                    | 1000000                         | 0                                 | 0                              | 0                        | 1000000
+curve-crv-cvxcrv-v2-gauge | CRV   | complete | 1836449.482029423593601075 | 1818308.727865790069009678 | 949559.002174800755628303054838 | -5.044099782519924437169694516200 | -9473.482780086862845643932737 | 249.80942502880572065860 |
+
+Monthly values at 2024-03-13T00:00:00+00:00
+Strategy                  | Asset | Status   | Start quantity             | End quantity               | End USD                          | Net %                             | vs hold USD                      | Gas USD                  | Accounting USD
+hold-USD                  | USD   | complete | 1000413.170639             | 1000413.170639             | 1000192.079328288781             | 0.019207932828878100              | 0                                | 0                        | 1000192.079328288781
+hold-BTC                  | BTC   | complete | 23.65128544                | 23.65128544                | 1688938.29327040                 | 68.8938293270400                  | 0                                | 0                        | 1688938.29327040
+hold-ETH                  | ETH   | complete | 400.442088065224007304     | 400.442088065224007304     | 1593078.7589498806682575032      | 59.3078758949880668257503200      | 0                                | 0                        | 1593078.7589498806682575032
+hold-CRV                  | CRV   | complete | 1836449.482029423593601075 | 1836449.482029423593601075 | 1523202.620980700752393352435100 | 52.3202620980700752393352435100   | 0                                | 0                        | 1523202.620980700752393352435100
+cash-USD                  | cash  | complete | 1000000                    | 1000000                    | 1000000                          | 0                                 | 0                                | 0                        | 1000000
+curve-crv-cvxcrv-v2-gauge | CRV   | complete | 1836449.482029423593601075 | 1714445.784533467116373509 | 1422009.338174024563399446822852 | 42.200933817402456339944682285200 | -101193.282806676188993905612248 | 269.58118846776165613210 |
+
+Dated actions
+curve-crv-cvxcrv-v2-gauge/CRV: 2024-01-12T23:59:59+00:00 block=18994253 entry gas_units=679801 gas_wei=11688896505179829 gas_usd=29.18997990859527617196 route=
+curve-crv-cvxcrv-v2-gauge/CRV: 2024-02-12T23:59:59+00:00 block=19215377 compound gas_units=835432 gas_wei=46263033601749536 gas_usd=122.96668068311424919264 route=
+curve-crv-cvxcrv-v2-gauge/CRV: 2024-03-12T23:59:59+00:00 block=19422438 exit gas_units=728725 gas_wei=29516257666855725 gas_usd=117.4245278760521307675 route=

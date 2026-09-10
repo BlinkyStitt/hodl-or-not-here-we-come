@@ -8,22 +8,22 @@
     "eth-abi": "6.0.0"
   },
   "scenario": {
-    "start": 1785542400,
-    "end": 1789031255,
+    "start": 1705104000,
+    "end": 1710288000,
     "assets": [
-      "USD"
+      "CRV"
     ],
     "usd_value": "10000"
   },
   "start_block": {
-    "number": 25656292,
-    "hash": "0x0485b1eb7ba44d0e9cc31f1ac5e203b86e6525feb0c36283bef329e903bbf507",
-    "timestamp": 1785542399
+    "number": 18994253,
+    "hash": "0x0aade08c542b94c7b138b62cb80648bd4e3042f22bb388241672e43737ecf0a1",
+    "timestamp": 1705103999
   },
   "end_block": {
-    "number": 25945987,
-    "hash": "0x8fcee4c0b8ba86cf0a0307792591db43bccf013bc234c10cb665df2e97eb3263",
-    "timestamp": 1789031255
+    "number": 19422438,
+    "hash": "0x05c9e3334c1e672705cc80d0417c9c713a5a3b80c903e7bc953e5edc648f3721",
+    "timestamp": 1710287999
   },
   "assumptions": [
     "Ethereum mainnet; timestamps use UTC and the last block at or before each time.",
@@ -67,48 +67,70 @@
   },
   "contracts": [
     {
-      "strategy": "yearn-usd-v3",
-      "address": "0x696d02Db93291651ED510704c9b286841d506987",
-      "version": "3.0.4",
+      "strategy": "curve-crv-cvxcrv-v2-gauge",
+      "address": "0x971add32Ea87f10bD192671630be3BE8A11b8623",
+      "version": "factory-plain",
       "deployment": {
-        "number": 24271831,
-        "hash": "0xeffb8ca1c5b321837f1bd08603a53227e9fa2f02db88757fbe5d80ec5ed6a988",
-        "timestamp": 1768861991
+        "number": 16783676,
+        "hash": "0x7c3fbfe9f6f3513c885469011b82a599d3fb9c02f53e10347d843de4791ab835",
+        "timestamp": 1678280183
       },
-      "gauge": null,
-      "gauge_deployment": null,
-      "code_hash": "0x9cbbbf6a1173fae2d7728e88b6e98819cdb39903e9df82fef7b439675b52d86a",
-      "lp_deployment": null,
-      "gauge_code_hash": null
+      "gauge": "0xfb18127c1471131468a1aad4785c19678e521d86",
+      "gauge_deployment": {
+        "number": 16783816,
+        "hash": "0x6e7ddd80de420caa0bb31a225bc4b0be575904114ee2616a3b6b45d652ba599e",
+        "timestamp": 1678281887
+      },
+      "code_hash": "0x148d1345059482faa8834aff0630c9a4b47393df8edf9d99605b8f2f04752f62",
+      "lp_deployment": {
+        "number": 16783676,
+        "hash": "0x7c3fbfe9f6f3513c885469011b82a599d3fb9c02f53e10347d843de4791ab835",
+        "timestamp": 1678280183
+      },
+      "gauge_code_hash": "0x3bbaf55c798586041fe5074bf3d309b8eda3c43d340e7923c6f7c503346b3573"
     }
   ],
   "actions": {
-    "yearn-usd-v3/USD": [
+    "curve-crv-cvxcrv-v2-gauge/CRV": [
       {
-        "timestamp": 1785542400,
+        "timestamp": 1705104000,
         "block": {
-          "number": 25656292,
-          "hash": "0x0485b1eb7ba44d0e9cc31f1ac5e203b86e6525feb0c36283bef329e903bbf507",
-          "timestamp": 1785542399
+          "number": 18994253,
+          "hash": "0x0aade08c542b94c7b138b62cb80648bd4e3042f22bb388241672e43737ecf0a1",
+          "timestamp": 1705103999
         },
         "kind": "entry",
-        "gas_units": 510994,
-        "gas_wei": 54468742159788,
-        "gas_usd": "0.1013330670312491655576254914716",
+        "gas_units": 679753,
+        "gas_wei": 11688071165069637,
+        "gas_usd": "29.18791883625850030188",
         "route": [],
         "note": ""
       },
       {
-        "timestamp": 1789031255,
+        "timestamp": 1707782400,
         "block": {
-          "number": 25945987,
-          "hash": "0x8fcee4c0b8ba86cf0a0307792591db43bccf013bc234c10cb665df2e97eb3263",
-          "timestamp": 1789031255
+          "number": 19215377,
+          "hash": "0xd7b322fd23633934d1783514cf6e9d41c96181b32b208271057ce8df6cc3b63a",
+          "timestamp": 1707782399
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1710288000,
+        "block": {
+          "number": 19422438,
+          "hash": "0x05c9e3334c1e672705cc80d0417c9c713a5a3b80c903e7bc953e5edc648f3721",
+          "timestamp": 1710287999
         },
         "kind": "exit",
-        "gas_units": 445544,
-        "gas_wei": 108289879546024,
-        "gas_usd": "0.2675176509133124973477307593160",
+        "gas_units": 728701,
+        "gas_wei": 29515285571505621,
+        "gas_usd": "117.4206605891208120243",
         "route": [],
         "note": ""
       }

@@ -1,10 +1,10 @@
 # Verification status
 
-All **77 tests pass**, including all 18 fixed-block mainnet tests. Validation
+All **80 tests pass**, including all 18 fixed-block mainnet tests. Validation
 used the owner's Ethereum archive node. Ruff formatting, Ruff checks, and ty
 checks pass. The local Anvil harness verifies gas rules before and after
 EIP-1559, fixed timestamps, snapshots, concurrent archive reads, and rejection
-of archive write methods. The wheel build passes.
+of archive write methods. Wheel and source-distribution builds pass.
 
 The mainnet checks cover deposits, redemptions, and receipt gas for all fourteen
 strategies. Four independent checks compare historical gauge integrals with
@@ -32,6 +32,8 @@ locked profit, calendar dates, historical block and price selection, cache
 identity, gas prices, persistent shares, entry costs, and monthly compounding.
 The review fixes preserve tiny rewards, measure gas before rejecting a deposit
 near its capacity limit, and cache the finalized end for offline replay.
+Absent-contract checks run before the deployment lookup so offline reports
+retain the same reason, including when a later deployment is already cached.
 
 A live DefiLlama check for 2022-01-01 returned a USDC observation 11 seconds
 after the target. The selection rule rejected it. The chart request selected
@@ -40,8 +42,8 @@ prior USDC and WBTC observations within 24 hours.
 The dependency refresh uses web3.py 8.0.0, eth-abi 6.0.0, pytest 9.1.1,
 Ruff 0.16.6, ty 0.0.80, python-dotenv 1.2.3, and hatchling 1.32.0.
 `uv lock --upgrade` selected the latest compatible transitive releases on
-2026-09-10. `pip-audit` found no
-known vulnerabilities in the exported lockfile. Pydantic pins pydantic-core
+2026-09-10. `pip-audit` found no known vulnerabilities in the exported lockfile.
+Pydantic pins pydantic-core
 2.46.5. eth-abi constrains parsimonious to 0.10.x. No dependency override bypasses
 these upstream requirements.
 
@@ -65,5 +67,44 @@ CSV, and JSON files are byte-identical to the online result. The replay check
 replaces both RPC and HTTP request functions with failures to prove that no
 network requests occur.
 
-The full four-asset 2022 comparison is still being validated. Its sample and
-cache replay evidence will be added after that run completes.
+The CRV/cvxCRV v2 gauge samples cover 2024-01-13 through 2024-03-13. The
+[$10,000 sample](samples/2024-crv-gauge.txt) retains rewards at the monthly
+attempt because proceeds cannot cover gas. The
+[$1,000,000 sample](samples/2024-crv-gauge-compound.txt) completes the monthly
+claim and reinvestment. That action uses 835,432 gas units, estimated at
+$122.96668068311424919264 at the action block. These are hypothetical positions;
+the larger amount tests the successful compounding path.
+
+Both gauge samples return status 0 and replay offline with identical text,
+CSV, and JSON files. The sidecar JSON files record the starting value and all
+actions. Regenerate them with:
+
+```bash
+uv run hodl compare --start 2024-01-13 --end 2024-03-13 --assets CRV \
+  --strategy curve-crv-cvxcrv-v2-gauge --cache .hodl/crv-gauge.sqlite \
+  --csv docs/samples/2024-crv-gauge.csv
+uv run hodl compare --start 2024-01-13 --end 2024-03-13 --assets CRV \
+  --usd-value 1000000 --strategy curve-crv-cvxcrv-v2-gauge \
+  --cache .hodl/crv-gauge.sqlite --csv docs/samples/2024-crv-gauge-compound.csv
+```
+
+The [full four-asset comparison](samples/2022-q1.txt) covers 2022-01-01 through
+2022-04-01, from block 13,916,165 to block 14,497,033. Its completed run has 183
+monthly rows: 135 complete results and 48 unavailable entries. Curve CRV/cvxCRV
+v2, its Yearn vault, and Yearn USD V3 had not deployed at entry. Both Curve LP
+and gauge positions therefore remain unavailable for that pool.
+
+The ten deployed strategies complete all forty starting positions. The report
+records forty entries, forty final exits, and twenty-four compounding attempts
+that retain rewards because gas costs exceed the proceeds.
+
+```bash
+uv run hodl compare --start 2022-01-01 --end 2022-04-01 \
+  --assets USD,BTC,ETH,CRV --usd-value 10000 --cache .hodl/2022-q1.sqlite \
+  --csv docs/samples/2022-q1.csv
+```
+
+Status 1 is expected for this period because the report retains the undeployed
+contracts. All 183 rows match the earlier completed run. An offline replay with
+RPC and HTTP calls disabled returns status 1 and produces byte-identical text,
+CSV, and JSON files, including the unavailable-contract explanations.
