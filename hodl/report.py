@@ -75,12 +75,16 @@ def assumptions() -> tuple[str, ...]:
             "blank values do not mean zero."
         ),
         (
-            "Best means the highest complete ending quantity among selected "
-            "options and holding the same asset at that observation."
+            "Best means the highest complete ending USD value across all selected "
+            "positions, all asset holding benchmarks, and cash at that observation."
         ),
         (
             "The single-asset vault benchmark uses a selected vault whose "
             "underlying is the starting asset (WETH for ETH), without an LP."
+        ),
+        (
+            "Both benchmark gaps use USD proceeds after costs from equal "
+            "initial USD values."
         ),
         (
             "Benchmark winners are historical comparisons, not assumed "
@@ -121,10 +125,16 @@ def row_record(row: Observation) -> dict:
 
 
 def comparison_records(rows: list[Observation]) -> list[dict]:
-    """Compare only matching assets and dates, using complete net proceeds."""
+    """Compare net USD proceeds by date, with a matching plain-asset vault."""
     groups: dict[tuple[str, int], list[Observation]] = defaultdict(list)
+    outcomes: dict[int, list[tuple[str, str, Decimal]]] = defaultdict(list)
     for row in rows:
         groups[row.asset, row.target].append(row)
+        if row.status == "complete" and row.end_usd is not None:
+            outcomes[row.target].append((row.strategy, row.asset, row.end_usd))
+    winners = {
+        target: max(options, key=itemgetter(2)) for target, options in outcomes.items()
+    }
     tokens = assets()
     catalog = strategies()
     benchmarks = {}
@@ -137,17 +147,14 @@ def comparison_records(rows: list[Observation]) -> list[dict]:
             and strategy.pool is None
             and strategy.underlying == token
         }
-        complete = [
-            (row.strategy, row.end_quantity)
+        vault_options = [
+            (row.strategy, row.end_usd)
             for row in group
-            if row.status == "complete" and row.end_quantity is not None
+            if row.status == "complete"
+            and row.end_usd is not None
+            and row.strategy in vault_names
         ]
-
-        def best(options: list[tuple[str, Decimal]]) -> tuple[str, Decimal] | None:
-            return max(options, key=itemgetter(1), default=None)
-
-        winner = best(complete)
-        vault = best([option for option in complete if option[0] in vault_names])
+        vault = max(vault_options, key=itemgetter(1), default=None)
         if vault:
             vault_status = "complete"
         elif not vault_names:
@@ -156,11 +163,13 @@ def comparison_records(rows: list[Observation]) -> list[dict]:
             vault_status = "unavailable"
         else:
             vault_status = "not selected"
-        benchmarks[key] = winner, vault, vault_status
+        benchmarks[key] = vault, vault_status
     records = []
     for row in rows:
-        winner, vault, vault_status = benchmarks[row.asset, row.target]
+        winner = winners.get(row.target)
+        vault, vault_status = benchmarks[row.asset, row.target]
         quantity = row.end_quantity if row.status == "complete" else None
+        end_usd = row.end_usd if row.status == "complete" else None
         records.append(
             {
                 **row_record(row),
@@ -170,16 +179,17 @@ def comparison_records(rows: list[Observation]) -> list[dict]:
                     else None
                 ),
                 "best_strategy": winner[0] if winner else None,
-                "versus_best_quantity": (
-                    quantity - winner[1]
-                    if quantity is not None and winner is not None
+                "best_asset": winner[1] if winner else None,
+                "versus_best_usd": (
+                    end_usd - winner[2]
+                    if end_usd is not None and winner is not None
                     else None
                 ),
                 "single_vault_strategy": vault[0] if vault else None,
                 "single_vault_status": vault_status,
-                "versus_single_vault_quantity": (
-                    quantity - vault[1]
-                    if quantity is not None and vault is not None
+                "versus_single_vault_usd": (
+                    end_usd - vault[1]
+                    if end_usd is not None and vault is not None
                     else None
                 ),
             }
@@ -187,49 +197,55 @@ def comparison_records(rows: list[Observation]) -> list[dict]:
     return records
 
 
-def asset_table(rows: list[Observation]) -> str:
-    compared = comparison_records(rows)
+def asset_table(compared: list[dict]) -> str:
     first = compared[0]
+    winner = (
+        f"{first['best_strategy']}/{first['best_asset']}"
+        if first["best_strategy"]
+        else "unavailable"
+    )
     lines = [
-        f"{rows[0].asset}: quantities and gaps use the starting asset. "
-        f"Best selected option: {first['best_strategy'] or 'unavailable'}. "
+        f"{first['asset']}: gaps use net USD proceeds. "
+        f"Best across the comparison: {winner}. "
         "Single-asset vault: "
         f"{first['single_vault_strategy'] or first['single_vault_status']}."
     ]
     fields = (
         "Strategy",
         "Status",
+        "End USD",
+        "Net USD %",
+        "vs best USD",
+        "vs vault USD",
+        "vs hold USD",
+        "Gas USD",
         "Start quantity",
         "End quantity",
         "Token %",
-        "vs best quantity",
-        "vs vault quantity",
-        "End USD",
-        "Net USD %",
-        "vs hold USD",
-        "Gas USD",
         "Accounting USD",
     )
     records = [fields]
-    for row, comparison in zip(rows, compared, strict=True):
+    for row in compared:
         records.append(
             tuple(
                 scalar(value)
                 for value in (
-                    row.strategy,
-                    row.status,
-                    row.start_quantity,
-                    row.end_quantity,
-                    comparison["token_return_fraction"] * 100
-                    if comparison["token_return_fraction"] is not None
+                    row["strategy"],
+                    row["status"],
+                    row["end_usd"],
+                    row["net_return_fraction"] * 100
+                    if row["net_return_fraction"] is not None
                     else None,
-                    comparison["versus_best_quantity"],
-                    comparison["versus_single_vault_quantity"],
-                    row.end_usd,
-                    row.net_return * 100 if row.net_return is not None else None,
-                    row.versus_hold_usd,
-                    row.gas_usd,
-                    row.accounting_usd,
+                    row["versus_best_usd"],
+                    row["versus_single_vault_usd"],
+                    row["versus_hold_usd"],
+                    row["gas_usd"],
+                    row["start_quantity"],
+                    row["end_quantity"],
+                    row["token_return_fraction"] * 100
+                    if row["token_return_fraction"] is not None
+                    else None,
+                    row["accounting_usd"],
                 )
             )
         )
@@ -242,20 +258,21 @@ def asset_table(rows: list[Observation]) -> str:
         ).rstrip()
         for record in records
     ]
-    for row in rows:
-        if row.note:
-            output.append(f"  {row.strategy}/{row.asset}: {row.note}")
-        if row.route:
+    for row in compared:
+        if row["note"]:
+            output.append(f"  {row['strategy']}/{row['asset']}: {row['note']}")
+        if row["route"]:
             output.append(
-                f"  {row.strategy}/{row.asset} exit route: " + "; ".join(row.route)
+                f"  {row['strategy']}/{row['asset']} exit route: "
+                + "; ".join(row["route"])
             )
     return "\n".join([*lines, *output])
 
 
 def table(rows: list[Observation]) -> str:
-    groups: dict[tuple[str, int], list[Observation]] = defaultdict(list)
-    for row in rows:
-        groups[row.asset, row.target].append(row)
+    groups: dict[tuple[str, str], list[dict]] = defaultdict(list)
+    for row in comparison_records(rows):
+        groups[row["asset"], row["target_utc"]].append(row)
     return "\n\n".join(asset_table(group) for group in groups.values())
 
 

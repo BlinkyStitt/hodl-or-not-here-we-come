@@ -74,16 +74,22 @@ state once at entry. A run never changes its selected gauge.
 
 ## Results and costs
 
-Tables group results by starting asset. They show token return, the quantity gap
-against the best complete selected option, and the quantity gap against a plain
-vault for that asset. Holding the same asset can be the best option. The vault
-benchmark requires a matching underlying token, with WETH accepted for ETH;
-LP vaults do not qualify. If several matching vaults are selected, the benchmark
-uses the highest complete ending quantity at that observation. The report names
-both benchmarks and marks missing or unavailable vault benchmarks explicitly.
+Every position and benchmark starts with the same USD value. At each observation,
+"best" is the highest complete ending USD value after costs across all selected
+strategies and starting assets, all four holding benchmarks, and constant USD
+cash. The winner can use any starting asset. Strategy filters limit the strategy
+candidates; this is not a claim about every possible investment.
 
-For an ETH comparison that retains ETH exposure, select the pool positions and
-both vaults:
+Tables group rows by starting asset for display. They lead with ending USD value,
+USD return, the USD gap against the overall winner, and the USD gap against a
+plain vault for the starting asset. The plain-vault benchmark requires a matching
+underlying token, with WETH accepted for ETH; LP vaults do not qualify. If several
+matching vaults are selected, the benchmark uses the highest complete ending USD
+value at that observation. The report identifies the overall winner's strategy
+and starting asset, names the plain vault, and marks missing or unavailable vault
+benchmarks explicitly. Token quantities and token returns provide extra detail.
+
+To focus on the ETH/stETH pool positions and the two ETH vaults:
 
 ```bash
 uv run hodl compare --start 2022-01-01 --end 2022-04-01 --assets ETH \
@@ -92,13 +98,14 @@ uv run hodl compare --start 2022-01-01 --end 2022-04-01 --assets ETH \
   --csv reports/eth-vaults.csv
 ```
 
-This compares holding ETH, the plain WETH vault, the Curve ETH/stETH LP, its
-gauge, and the Yearn ETH/stETH vault. Each ends in ETH after estimated costs.
+This selects the plain WETH vault, the Curve ETH/stETH LP, its gauge, and the
+Yearn ETH/stETH vault, funded with ETH. Each position ends in ETH after estimated
+costs. All four holding benchmarks and cash remain eligible to win by USD value.
 The historical Yearn pool vault is `0xdCD90C7f6324cfa40d7169ef80b12031770B4325`.
 Its share accounting includes its harvests and fees. The engine does not add
 manual gauge compounding or subtract another vault fee from this position.
-"Best" refers to the selected options at each observation; it does not assume
-that the position migrates between the winning strategies.
+The comparison does not assume that a position migrates between winning
+strategies.
 
 The final and monthly tables show starting quantity, ending quantity, ending
 USD value, net return, estimated gas costs, and gain or loss against holding
@@ -164,8 +171,9 @@ the same monthly observations as the text report. Its adjacent JSON file records
 scenario inputs, block hashes, contracts, assumptions, and dated actions.
 CSV `token_return_fraction` measures the change in starting-asset quantity;
 `net_return_fraction` measures the USD return. The two benchmark gaps are
-`versus_best_quantity` and `versus_single_vault_quantity`, with their strategy
-names and the single-vault availability status in adjacent columns.
+`versus_best_usd` and `versus_single_vault_usd`. `best_strategy` and `best_asset`
+identify the overall winner. The plain-vault strategy name and availability
+status appear in adjacent columns.
 
 Use an explicit end date for an offline rerun. Keep the same RPC URL as the
 cache source identifier; offline mode makes no remote requests:

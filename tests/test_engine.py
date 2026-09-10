@@ -164,9 +164,10 @@ def test_csv_uses_same_full_values_and_has_source_manifest(setup, tmp_path):
     assert row["net_return_fraction"] == "-0.15"
     assert row["token_return_fraction"] == "-0.15"
     assert row["best_strategy"] == "hold-USD"
-    assert row["versus_best_quantity"] == "-15"
+    assert row["best_asset"] == "USD"
+    assert row["versus_best_usd"] == "-15"
     assert row["single_vault_strategy"] == "yearn-usdc-v2"
-    assert row["versus_single_vault_quantity"] == "0"
+    assert row["versus_single_vault_usd"] == "0"
     metadata = json.loads(path.with_suffix(".json").read_text())
     assert metadata["assets"]["USD"]["address"] == USDC.address
     assert metadata["actions"]["yearn-usdc-v2/USD"][0]["kind"] == "entry"

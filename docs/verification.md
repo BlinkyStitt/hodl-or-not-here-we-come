@@ -1,7 +1,7 @@
 # Verification status
 
-The ETH/stETH vault addition has **69 passing local tests** and a passing
-fixed-block mainnet check for the new vault. Its contract is
+The ETH/stETH vault and USD benchmark changes have **72 passing local tests**.
+The new vault also passed its fixed-block mainnet check. Its contract is
 `0xdCD90C7f6324cfa40d7169ef80b12031770B4325`, version `0.3.0`, with underlying
 `0x06325440D014e39736583c165C2963BA99fAf14E`. It deployed at block 11,654,862
 (`0x0d39d66f9dcc21aafaa722e18cf6477394013d64ea48b22d4b94e61888c48c2b`).
@@ -16,11 +16,14 @@ cases failed during setup because the configured RPC reset connections.
 An independent curl check also returned `Connection reset by peer`. The new
 ETH period report and its offline replay remain pending until RPC access returns.
 Ruff formatting, Ruff checks, ty checks, and wheel/source builds pass for the
-addition. Reporting tests cover token returns, gaps against both benchmarks,
-matching dates and assets, incomplete results, and missing plain-asset vaults.
+addition. The report correction also passes these checks. Reporting tests cover
+equal initial USD values, a winner across starting assets, USD gaps against both
+benchmarks, holding and cash winners, date boundaries, incomplete results, and
+missing plain-asset vaults. The plain vault matches the starting asset; the
+overall winner uses the highest complete USD proceeds across the comparison.
 
 The reports below record the original release at commit `567e7c4`, before the
-ETH/stETH vault and token-unit benchmark columns were added. Their manifests
+ETH/stETH vault and benchmark columns were added. Their manifests
 retain the calculation fingerprint. Use that commit for byte-exact replay of
 those files, or regenerate them with the current code and catalog.
 
