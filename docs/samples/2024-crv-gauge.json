@@ -1,0 +1,139 @@
+{
+  "engine": {
+    "source_sha256": "28d04fff5079165f6be59cb4758d62cfcf1adcbe52500da8a63e9f0bb636805c",
+    "decimal_precision": 100,
+    "decimal_rounding": "ROUND_HALF_EVEN",
+    "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist",
+    "web3": "8.0.0",
+    "eth-abi": "6.0.0"
+  },
+  "scenario": {
+    "start": 1705104000,
+    "end": 1710288000,
+    "assets": [
+      "CRV"
+    ],
+    "usd_value": "10000"
+  },
+  "start_block": {
+    "number": 18994253,
+    "hash": "0x0aade08c542b94c7b138b62cb80648bd4e3042f22bb388241672e43737ecf0a1",
+    "timestamp": 1705103999
+  },
+  "end_block": {
+    "number": 19422438,
+    "hash": "0x05c9e3334c1e672705cc80d0417c9c713a5a3b80c903e7bc953e5edc648f3721",
+    "timestamp": 1710287999
+  },
+  "assumptions": [
+    "Ethereum mainnet; timestamps use UTC and the last block at or before each time.",
+    "Assets are already held at entry. USD=USDC, BTC=WBTC, ETH=native ETH, CRV=CRV.",
+    "Each starting asset has the same initial USD value; token amounts round down.",
+    "Historical prices must be at or before the block timestamp and at most 24 hours old.",
+    "One entry; monthly observations are hypothetical exits. Only scheduled compounds change shares.",
+    "Fixed vault and gauge; no migration. No veCRV boost. Final exit sells remaining rewards.",
+    "The added position does not change later market activity, supplies, or reward integrals.",
+    "Routes cover the catalog Curve pools and Uniswap V3, with at most two swaps.",
+    "Swap execution includes fees and price impact; these are not exchange-wide best-route claims.",
+    "Gas units come from local fork receipts, including approvals, wraps, swaps, and protocol actions.",
+    "Gas funding debits equivalent asset value at historical prices; it is an estimate.",
+    "Gas price uses the block's median priority fee plus base fee, or pre-London median gasPrice.",
+    "An even-count median rounds up to the nearest wei. No current gas prices are substituted.",
+    "Yearn V2 withdrawals use maxLoss=1 basis point. V3 uses the deployed redeem defaults.",
+    "Yearn share value already includes reported fees and rewards. No extra yield is added.",
+    "Unavailable or incomplete rows are not complete net outcomes; blank values do not mean zero."
+  ],
+  "assets": {
+    "USD": {
+      "symbol": "USDC",
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "decimals": 6
+    },
+    "BTC": {
+      "symbol": "WBTC",
+      "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "decimals": 8
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "decimals": 18
+    },
+    "CRV": {
+      "symbol": "CRV",
+      "address": "0xd533a949740bb3306d119cc777fa900ba034cd52",
+      "decimals": 18
+    }
+  },
+  "contracts": [
+    {
+      "strategy": "curve-crv-cvxcrv-v2-gauge",
+      "address": "0x971add32Ea87f10bD192671630be3BE8A11b8623",
+      "version": "factory-plain",
+      "deployment": {
+        "number": 16783676,
+        "hash": "0x7c3fbfe9f6f3513c885469011b82a599d3fb9c02f53e10347d843de4791ab835",
+        "timestamp": 1678280183
+      },
+      "gauge": "0xfb18127c1471131468a1aad4785c19678e521d86",
+      "gauge_deployment": {
+        "number": 16783816,
+        "hash": "0x6e7ddd80de420caa0bb31a225bc4b0be575904114ee2616a3b6b45d652ba599e",
+        "timestamp": 1678281887
+      },
+      "code_hash": "0x148d1345059482faa8834aff0630c9a4b47393df8edf9d99605b8f2f04752f62",
+      "lp_deployment": {
+        "number": 16783676,
+        "hash": "0x7c3fbfe9f6f3513c885469011b82a599d3fb9c02f53e10347d843de4791ab835",
+        "timestamp": 1678280183
+      },
+      "gauge_code_hash": "0x3bbaf55c798586041fe5074bf3d309b8eda3c43d340e7923c6f7c503346b3573"
+    }
+  ],
+  "actions": {
+    "curve-crv-cvxcrv-v2-gauge/CRV": [
+      {
+        "timestamp": 1705104000,
+        "block": {
+          "number": 18994253,
+          "hash": "0x0aade08c542b94c7b138b62cb80648bd4e3042f22bb388241672e43737ecf0a1",
+          "timestamp": 1705103999
+        },
+        "kind": "entry",
+        "gas_units": 679753,
+        "gas_wei": 11688071165069637,
+        "gas_usd": "29.18791883625850030188",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1707782400,
+        "block": {
+          "number": 19215377,
+          "hash": "0xd7b322fd23633934d1783514cf6e9d41c96181b32b208271057ce8df6cc3b63a",
+          "timestamp": 1707782399
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1710288000,
+        "block": {
+          "number": 19422438,
+          "hash": "0x05c9e3334c1e672705cc80d0417c9c713a5a3b80c903e7bc953e5edc648f3721",
+          "timestamp": 1710287999
+        },
+        "kind": "exit",
+        "gas_units": 728701,
+        "gas_wei": 29515285571505621,
+        "gas_usd": "117.4206605891208120243",
+        "route": [],
+        "note": ""
+      }
+    ]
+  }
+}

@@ -2,6 +2,7 @@ import arrow
 import logging
 
 from src.blocks import find_block_at
+from src.logs import addLoggingLevel
 from src.tokens import get_token_contract
 from src import strategy
 
@@ -15,10 +16,16 @@ def print_end_wei(strat_name, end_wei, end_token_decimal_shift):
 
 # TODO: what default dates? should probably pick a bull, a bear, and both?
 def main(start_date="2022-01-01", end_date="now"):
+    addLoggingLevel("TRACE", logging.DEBUG - 5)
+
     # TODO: default level from env var
-    logging.basicConfig(level=logging.INFO)
+    # TODO: use rich module in the logging messages
+    logging.basicConfig(level=logging.TRACE)
     logging.getLogger("web3").setLevel(logging.INFO)
     logging.getLogger("urllib3").setLevel(logging.INFO)
+
+    usdc = get_token_contract("USDC")
+    weth = get_token_contract("WETH")
 
     # start with $10k USDC
     start_usdc = 10_000
@@ -45,6 +52,7 @@ def main(start_date="2022-01-01", end_date="now"):
 
     start_usdc_wei = start_usdc * usdc_decimal_shift
 
+    """
     end_wei = strategy.hodl_eth(start_block, usdc, start_usdc_wei, end_block)
     print_end_wei("hodl eth", end_wei, usdc_decimal_shift)
 
@@ -67,5 +75,14 @@ def main(start_date="2022-01-01", end_date="now"):
     print_end_wei("yearn vault curve tricrypto2", end_wei, usdc_decimal_shift)
 
     # strategy: trade half to ETH and deposit into Uniswap V1 ETH/USDC
-    # strategy: trade half to ETH and deposit into Uniswap V2 ETH/USDC
+    """
+
+    end_wei = strategy.uniswap_v2_single_sided(
+        start_block, usdc, weth, start_usdc_wei, end_block
+    )
+    print_end_wei("uniswap V2 ETH/USDC", end_wei, usdc_decimal_shift)
+
     # strategy: trade half to ETH and deposit into Uniswap V3 ETH/USDC. claim fees every 2 weeks.
+    # strategy: dollar cost average into ETH
+    # strategy: dollar cost average into BTC
+    # strategy: dollar cost average into tricrypto2

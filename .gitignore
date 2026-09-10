@@ -1,7 +1,14 @@
 __pycache__
+.DS_Store
 .env
 .history
 .hypothesis/
 build/
 reports/
 venv/
+.venv/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.hodl/
+dist/

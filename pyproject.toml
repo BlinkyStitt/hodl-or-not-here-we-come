@@ -1,0 +1,40 @@
+[build-system]
+requires = ["hatchling==1.32.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "hodl-or-not"
+version = "0.1.0"
+description = "Reproducible Ethereum historical position comparisons"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "web3==8.0.0",
+    "eth-abi==6.0.0",
+    "python-dotenv==1.2.3",
+]
+
+[project.scripts]
+hodl = "hodl.cli:main"
+
+[dependency-groups]
+dev = ["pytest==9.1.1", "ruff==0.16.6", "ty==0.0.80"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["hodl"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/hodl", "/tests", "/docs", "/README.md", "/.env.example", "/pyproject.toml", "/uv.lock"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["fork: requires HODL_RPC_URL and Anvil; executes only on a local fork"]
+
+[tool.ruff]
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.ty.src]
+include = ["hodl", "tests"]
