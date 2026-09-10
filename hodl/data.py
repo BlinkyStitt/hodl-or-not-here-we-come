@@ -4,8 +4,8 @@ import hashlib
 import json
 from collections.abc import Callable
 from decimal import Decimal
+from http.client import HTTPException
 from typing import Any
-from urllib.error import URLError
 from urllib.request import urlopen
 
 from eth_abi import decode, encode
@@ -234,7 +234,7 @@ class Prices:
             try:
                 with urlopen(url, timeout=45) as response:
                     return json.loads(response.read(), parse_float=str)
-            except (URLError, ValueError) as exc:
+            except (OSError, HTTPException, ValueError) as exc:
                 raise Unavailable(
                     f"DefiLlama historical price request failed: {token.symbol}"
                 ) from exc

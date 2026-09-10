@@ -1,10 +1,14 @@
+import json
 from decimal import Decimal
+from http.client import IncompleteRead
+from unittest.mock import MagicMock
 
 import pytest
 
 from hodl.cache import Cache
-from hodl.data import Archive, last_block_at, select_price
-from hodl.model import Block, Unavailable
+from hodl.catalog import USDC
+from hodl.data import Archive, Prices, last_block_at, select_price
+from hodl.model import Block, Price, Unavailable
 
 
 def test_rpc_accepts_pending_receipt_but_rejects_missing_block(tmp_path, monkeypatch):
@@ -64,6 +68,43 @@ def test_price_age_includes_exact_24_hour_boundary():
     for timestamp in (13599, 100001):
         with pytest.raises(Unavailable, match="24 hours"):
             select_price([{"timestamp": timestamp, "price": 1}], 100000, "source")
+
+
+@pytest.mark.parametrize(
+    "error",
+    [TimeoutError("timed out"), ConnectionResetError("reset"), IncompleteRead(b"{")],
+    ids=["timeout", "connection-reset", "incomplete-read"],
+)
+def test_price_read_failure_is_unavailable_and_can_be_retried(
+    tmp_path, monkeypatch, error
+):
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.read.side_effect = error
+    monkeypatch.setattr("hodl.data.urlopen", lambda url, timeout: response)
+    cache = Cache(tmp_path / "evidence.sqlite")
+    prices = Prices(cache)
+    try:
+        with pytest.raises(Unavailable) as exc:
+            prices.at(USDC, 100000)
+        assert str(exc.value) == "DefiLlama historical price request failed: USDC"
+        assert exc.value.__cause__ is error
+
+        response.read.side_effect = None
+        response.read.return_value = json.dumps(
+            {
+                "coins": {
+                    USDC.price_id: {"prices": [{"timestamp": 100000, "price": 0.99}]}
+                }
+            }
+        ).encode()
+        assert prices.at(USDC, 100000) == Price(
+            Decimal("0.99"),
+            100000,
+            f"https://coins.llama.fi/chart/{USDC.price_id}?start=13600&period=1h&span=25",
+        )
+    finally:
+        cache.close()
 
 
 def test_cache_preserves_hash_and_source_and_reproduces_offline(tmp_path):
