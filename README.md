@@ -5,8 +5,8 @@ USDC, WBTC, native ETH, or CRV. The Python CLI models one deposit, monthly
 Curve gauge compounding, and withdrawal into the starting asset.
 
 These are historical estimates. The added position does not change later
-market activity. See [verification status](docs/verification.md) before using
-the output. Mainnet contract validation is a required release check.
+market activity. See [validation and sample reports](docs/verification.md) for
+the fixed-block mainnet checks, assumptions, and reproducible results.
 
 ## Setup
 
@@ -124,7 +124,9 @@ The default SQLite cache is `.hodl/history.sqlite`. It stores blocks, calls,
 logs, prices, fork reads, and action results with source details and block
 hashes. It stores a hash of the RPC URL, not the provider credential. Fork
 receipts preserve action arguments, full contract addresses, and gas units.
-Action evidence includes the code fingerprint and Anvil/library versions.
+Action evidence includes the calculation-code fingerprint, decimal precision,
+rounding mode, and Anvil/library versions. Display and configuration-file
+changes do not invalidate action results; resolved inputs identify each action.
 It also retains unavailable action outcomes. Use a new `--cache` path to
 reassess a failed action after the data source changes.
 
@@ -151,7 +153,7 @@ uv run ruff format --check hodl tests
 uv run ruff check hodl tests
 uv run ty check
 uv run pytest -m 'not fork'
-HODL_RPC_URL="$HODL_RPC_URL" uv run pytest -m fork
+uv run pytest -m fork
 ```
 
 Use `uv lock --upgrade` and `uv sync --locked` to refresh compatible dependencies.

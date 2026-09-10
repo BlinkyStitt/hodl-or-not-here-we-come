@@ -257,6 +257,7 @@ class Fork:
                     "to": address,
                     "from": ACCOUNT,
                     "data": calldata(signature, types, args),
+                    "gas": hex(self.gas_limit),
                 },
                 "latest",
             ],

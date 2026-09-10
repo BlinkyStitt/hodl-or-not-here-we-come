@@ -144,7 +144,7 @@ def table(rows: list[Observation]) -> str:
     output = [
         " | ".join(
             value.ljust(width) for value, width in zip(record, widths, strict=True)
-        )
+        ).rstrip()
         for record in records
     ]
     for row in rows:
@@ -202,7 +202,9 @@ def export_csv(report: Report, path: Path) -> None:
     records = [row_record(row) for row in report.observations]
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(records[0]))
+        writer = csv.DictWriter(
+            stream, fieldnames=list(records[0]), lineterminator="\n"
+        )
         writer.writeheader()
         writer.writerows(
             {key: scalar(value) for key, value in row.items()} for row in records

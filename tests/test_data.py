@@ -122,6 +122,43 @@ def test_deployment_search_checks_code_boundary(tmp_path, monkeypatch):
     cache.close()
 
 
+@pytest.mark.parametrize("known_later_deployment", [False, True])
+def test_absent_contract_replays_offline_with_the_same_reason(
+    tmp_path, monkeypatch, known_later_deployment
+):
+    path = tmp_path / "evidence.sqlite"
+    cache = Cache(path)
+    archive = Archive("http://unused.invalid", cache)
+
+    def block(number):
+        return Block(number, str(number), number * 12)
+
+    def request(method, params):
+        assert method == "eth_getCode"
+        return "0x6000" if int(params[1]["blockHash"]) >= 123 else "0x"
+
+    monkeypatch.setattr(archive, "block", block)
+    monkeypatch.setattr(archive, "request", request)
+    if known_later_deployment:
+        assert archive.deployment("contract", block(500)) == block(123)
+    with pytest.raises(Unavailable) as online:
+        archive.deployment("contract", block(122))
+    assert str(online.value) == "no contract at contract by block 122"
+    cache.close()
+
+    cache = Cache(path, offline=True)
+    archive = Archive("http://unused.invalid", cache)
+
+    def forbidden(*args):
+        pytest.fail("offline deployment lookup contacted the RPC")
+
+    monkeypatch.setattr(archive, "request", forbidden)
+    with pytest.raises(Unavailable) as offline:
+        archive.deployment("contract", block(122))
+    assert str(offline.value) == str(online.value)
+    cache.close()
+
+
 @pytest.mark.parametrize(
     "raw,expected",
     [

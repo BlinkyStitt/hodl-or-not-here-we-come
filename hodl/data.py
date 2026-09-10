@@ -140,9 +140,10 @@ class Archive:
         )
 
     def deployment(self, address: str, ceiling: Block) -> Block:
+        if self.code(ceiling, address) == "0x":
+            raise Unavailable(f"no contract at {address} by block {ceiling.number}")
+
         def find() -> dict:
-            if self.code(ceiling, address) == "0x":
-                raise Unavailable(f"no contract at {address} by block {ceiling.number}")
             low, high = 0, ceiling.number
             while low < high:
                 mid = (low + high) // 2

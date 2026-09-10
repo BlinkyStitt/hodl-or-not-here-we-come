@@ -4,7 +4,7 @@ import hashlib
 import shutil
 import subprocess
 from dataclasses import asdict, dataclass
-from decimal import Decimal
+from decimal import Decimal, getcontext
 from importlib.metadata import version
 from pathlib import Path
 
@@ -48,11 +48,25 @@ class Simulator:
             else "not installed"
         )
         digest = hashlib.sha256()
-        for path in sorted(Path(__file__).parent.glob("*.py")):
+        # These modules determine cached action results. CLI configuration and
+        # report rendering do not; resolved inputs already form part of each key.
+        for name in (
+            "cache",
+            "catalog",
+            "data",
+            "fork",
+            "model",
+            "positions",
+            "routes",
+            "simulation",
+        ):
+            path = Path(__file__).parent / f"{name}.py"
             digest.update(path.name.encode())
             digest.update(path.read_bytes())
         self.engine = {
             "source_sha256": digest.hexdigest(),
+            "decimal_precision": getcontext().prec,
+            "decimal_rounding": getcontext().rounding,
             "anvil": anvil_version,
             "web3": version("web3"),
             "eth-abi": version("eth-abi"),
