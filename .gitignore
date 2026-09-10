@@ -5,3 +5,9 @@ __pycache__
 build/
 reports/
 venv/
+.venv/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.hodl/
+dist/
