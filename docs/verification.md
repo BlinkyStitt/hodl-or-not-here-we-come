@@ -1,9 +1,18 @@
 # Verification status
 
-All **99 tests pass**: 76 local tests and 23 fixed-block mainnet tests. The four
-new gauge regressions also pass using saved mainnet state with
-`Cache(offline=True)` and remote RPC requests disabled. Ruff formatting, Ruff
-checks, ty, and wheel/source builds pass.
+All **103 tests have passed**: 80 local tests and 23 fixed-block mainnet tests.
+The latest full run passed 101 tests. Archive RPC transport failures prevented
+Anvil startup in the ETH/stETH and CRV/cvxCRV v2 repeated-claim checks. Both
+checks passed on a focused host rerun. Ruff formatting, Ruff checks, ty, and
+wheel/source builds pass. The unfinished Brownie files also pass a Python
+syntax check; they remain outside the active CLI package and runtime tests.
+
+Price-response regressions cover timeouts, connection resets, and incomplete
+HTTP reads. Failed reads remain retryable. The CLI keeps unavailable rows in
+text and CSV output and returns status 1 after a price timeout.
+
+The four gauge regressions previously passed using saved mainnet state with
+`Cache(offline=True)` and remote RPC requests disabled.
 
 The V3 regression tests first failed on the old implementation. They cover an
 unspent unit in either hop, rollback of the whole candidate, and selection of an

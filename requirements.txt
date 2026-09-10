@@ -1,3 +1,4 @@
 arrow
 eth-brownie
+rich
 tokenlists
