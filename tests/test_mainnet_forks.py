@@ -1,12 +1,12 @@
 """Required release checks. Skips explicitly when no mainnet archive is configured."""
 
-import os
 from decimal import Decimal
 
 import pytest
 
 from hodl.cache import Cache
 from hodl.catalog import CRV, ETH, USDC, strategies, verify
+from hodl.config import rpc_url
 from hodl.data import Archive, Prices
 from hodl.fork import ACCOUNT, Fork
 from hodl.model import Price, reward_accrual
@@ -33,7 +33,7 @@ class UnitPrices(Prices):
 
 @pytest.fixture
 def archive(tmp_path):
-    url = os.environ.get("HODL_RPC_URL")
+    url = rpc_url()
     if not url:
         pytest.skip("HODL_RPC_URL is required for fixed-block mainnet verification")
     cache = Cache(tmp_path / "mainnet.sqlite")
@@ -47,7 +47,7 @@ def archive(tmp_path):
 
 def fixed_block(name: str) -> int:
     if name == "yearn-usd-v3":
-        return 24_000_000
+        return 24_400_000
     if "crv-cvxcrv" in name:
         return 19_000_000
     return 14_000_000

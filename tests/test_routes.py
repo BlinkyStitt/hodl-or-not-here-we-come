@@ -3,10 +3,10 @@ from decimal import Decimal
 
 import pytest
 
-from hodl.catalog import ETH, STETH, USDC, WBTC, WETH
+from hodl.catalog import ETH, STETH, USDC, USDT, WBTC, WETH, pools
 from hodl.data import Archive, Prices
 from hodl.fork import Fork
-from hodl.model import Block, Price, Reverted, Unavailable
+from hodl.model import Block, Price, Reverted, Unaffordable, Unavailable
 from hodl.routes import Hop, Router
 
 
@@ -93,6 +93,31 @@ def test_missing_route_data_is_not_silently_omitted():
         CandidateRouter(error=Unavailable("archive transport failed")).best(
             WBTC, USDC, 10**8
         )
+
+
+@pytest.mark.parametrize("pool", [None, pools()[0]])
+def test_positive_reward_with_zero_quote_is_retained(monkeypatch, pool):
+    fork = RouteFork()
+    monkeypatch.setattr(fork, "balance", lambda token: 0)
+    monkeypatch.setattr(fork, "call", lambda *args: 0)
+    router = Router(fork, DollarPrices())
+    hop = Hop(USDT, USDC, pool=pool, fee=3000)
+    monkeypatch.setattr(
+        router,
+        "hops",
+        lambda source, target: (hop,) if (source, target) == (USDT, USDC) else (),
+    )
+    with pytest.raises(Unaffordable, match="too small"):
+        router.best(USDT, USDC, 1)
+    assert fork.gas_units == 0
+
+
+def test_absent_pool_remains_missing_data(monkeypatch):
+    router = Router(RouteFork(), DollarPrices())
+    monkeypatch.setattr(router, "hops", lambda *args: ())
+    with pytest.raises(Unavailable, match="no deployed pool") as exc:
+        router.best(USDT, USDC, 1)
+    assert not isinstance(exc.value, Unaffordable)
 
 
 @pytest.mark.parametrize(

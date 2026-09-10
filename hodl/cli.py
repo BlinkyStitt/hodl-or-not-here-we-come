@@ -1,7 +1,6 @@
 """CLI process setup; importing the package does not contact any service."""
 
 import argparse
-import os
 import sys
 from dataclasses import asdict
 from decimal import Decimal, InvalidOperation, localcontext
@@ -9,6 +8,7 @@ from pathlib import Path
 
 from hodl.cache import Cache
 from hodl.catalog import strategies, verify
+from hodl.config import rpc_url
 from hodl.data import Archive, Prices
 from hodl.engine import compare
 from hodl.model import Block, Scenario, Unavailable, parse_date
@@ -31,8 +31,8 @@ def parser() -> argparse.ArgumentParser:
     for command in (listing, comparison):
         command.add_argument(
             "--rpc-url",
-            default=os.environ.get("HODL_RPC_URL"),
-            help="archive RPC (default: HODL_RPC_URL)",
+            default=rpc_url(),
+            help="archive RPC (default: HODL_RPC_URL from environment or local .env)",
         )
         command.add_argument("--cache", type=Path, default=Path(".hodl/history.sqlite"))
         command.add_argument(
@@ -146,6 +146,11 @@ def run(args: argparse.Namespace) -> int:
         else:
             ceiling = archive.finalized()
             end = ceiling.timestamp
+            ceiling = Block(
+                **cache.get(
+                    "run-ceiling-v1", end, archive.source, lambda: asdict(ceiling)
+                )
+            )
         scenario = Scenario(
             start, end, tuple(args.assets.split(",")), Decimal(args.usd_value)
         )

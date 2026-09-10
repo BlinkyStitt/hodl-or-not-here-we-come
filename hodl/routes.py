@@ -6,7 +6,7 @@ from decimal import Decimal
 from hodl.catalog import ETH, USDC, USDT, WBTC, WETH, ZERO, Pool, pools
 from hodl.data import Prices
 from hodl.fork import ACCOUNT, Fork
-from hodl.model import Reverted, Token, Unavailable
+from hodl.model import Reverted, Token, Unaffordable, Unavailable
 
 FACTORY = "0x1F98431c8aD98523631AE4a59f267346ea31F984"
 QUOTER = "0xb27308f9F90D607463bb33eA1BeBb41C27CE5AB6"
@@ -93,7 +93,7 @@ class Router:
                 (i, j, amount),
             )
             if quote <= 0:
-                raise Reverted("Curve swap quote rounds to zero")
+                raise Unaffordable("Curve swap quote rounds to zero")
             self.fork.approve(hop.source, pool.address, amount)
             signature = f"exchange({index_type},{index_type},uint256,uint256)"
             types = (index_type, index_type, "uint256", "uint256")
@@ -118,7 +118,7 @@ class Router:
                 (hop.source.address, hop.target.address, hop.fee, amount, 0),
             )
             if quote <= 0:
-                raise Reverted("Uniswap swap quote rounds to zero")
+                raise Unaffordable("Uniswap swap quote rounds to zero")
             self.fork.approve(hop.source, ROUTER, amount)
             self.fork.transact(
                 ROUTER,
@@ -193,6 +193,7 @@ class Router:
         eth_price = self.prices.at(ETH, self.fork.block.timestamp).usd
         best = None
         failures = []
+        insufficient = []
         for path in candidates:
             with self.fork.snapshot():
                 gas_before = self.fork.gas_units
@@ -202,6 +203,9 @@ class Router:
                 except Reverted as exc:
                     failures.append(str(exc))
                     continue
+                except Unaffordable as exc:
+                    insufficient.append(str(exc))
+                    continue
                 net = (
                     target.quantity(output) * price
                     - Decimal(gas * gas_price) / 10**18 * eth_price
@@ -210,6 +214,11 @@ class Router:
                 if best is None or route.net_usd > best.net_usd:
                     best = route
         if best is None:
+            if insufficient:
+                raise Unaffordable(
+                    f"conversion {source.symbol}->{target.symbol} is too small: "
+                    + insufficient[0]
+                )
             reason = (
                 failures[0] if failures else "no deployed pool connects these tokens"
             )

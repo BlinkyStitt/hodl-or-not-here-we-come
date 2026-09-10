@@ -16,8 +16,14 @@ your PATH. Then install the locked dependencies:
 
 ```bash
 uv sync --locked
-export HODL_RPC_URL="https://YOUR_ETHEREUM_MAINNET_ARCHIVE_RPC"
+cp .env.example .env
 ```
+
+Set `HODL_RPC_URL` in `.env` to your Ethereum mainnet archive endpoint. The CLI
+and mainnet tests read `.env` from the current directory. Git ignores this
+file. An existing environment variable takes priority over `.env`, and
+`--rpc-url` takes priority over both. You do not need to export the URL for
+each command.
 
 The RPC must provide historical state, blocks, and transaction data, including
 hash-pinned `eth_call`, `eth_getCode`, and `eth_getStorageAt` reads. The tool

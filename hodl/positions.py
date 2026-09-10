@@ -16,6 +16,7 @@ from hodl.catalog import (
 )
 from hodl.fork import ACCOUNT, Fork
 from hodl.model import (
+    DepositLimit,
     Token,
     Unavailable,
     v2_deposit_shares,
@@ -130,7 +131,7 @@ def deposit(
                 strategy.address, "totalAssets()"
             )
             if underlying > capacity:
-                raise Unavailable("Yearn deposit exceeds its historical deposit limit")
+                raise DepositLimit(underlying, capacity)
             expected = v2_deposit_shares(
                 underlying,
                 fork.call(strategy.address, "totalSupply()"),
@@ -141,7 +142,7 @@ def deposit(
                 strategy.address, "maxDeposit(address)", ("address",), (ACCOUNT,)
             )
             if underlying > limit:
-                raise Unavailable("Yearn deposit exceeds maxDeposit")
+                raise DepositLimit(underlying, limit)
             expected = fork.call(
                 strategy.address, "previewDeposit(uint256)", ("uint256",), (underlying,)
             )
@@ -192,11 +193,19 @@ def withdraw(
     if strategy.kind in ("v2", "v3"):
         before = fork.balance(strategy.underlying)
         if strategy.kind == "v3":
-            limit = fork.call(
-                strategy.address, "maxRedeem(address)", ("address",), (ACCOUNT,)
+            assets = fork.call(
+                strategy.address, "previewRedeem(uint256)", ("uint256",), (shares,)
             )
-            if shares > limit:
-                raise Unavailable("Yearn shares exceed maxRedeem")
+            # maxRedeem rounds assets back to shares and can understate a full
+            # redeem by one share. Compare assets with the same loss policy.
+            limit = fork.call(
+                strategy.address,
+                "maxWithdraw(address,uint256)",
+                ("address", "uint256"),
+                (ACCOUNT, 10000),
+            )
+            if assets > limit:
+                raise Unavailable("Yearn redemption exceeds maxWithdraw")
             fork.transact(
                 strategy.address,
                 "redeem(uint256,address,address)",

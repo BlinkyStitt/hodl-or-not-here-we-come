@@ -15,6 +15,7 @@ USDT = Token("USDT", "0xdAC17F958D2ee523a2206206994597C13D831ec7", 6)
 STETH = Token("stETH", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", 18)
 CVXCRV = Token("cvxCRV", "0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7", 18)
 CURVE_FACTORY = "0xB9fC157394Af804a3578134A6585C0dc9cc990d4"
+ADDRESS_PROVIDER = "0x0000000022D53366457F9d5E68Ec105046FC4383"
 MINTER = "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0"
 ZERO = "0x0000000000000000000000000000000000000000"
 
@@ -185,11 +186,19 @@ def verify(archive: Archive, strategy: Strategy, block: Block) -> VerifiedStrate
             if linked_lp.lower() != pool.lp.address.lower():
                 raise Unavailable("pool LP token differs from the catalog")
         elif pool.lp.address.lower() != pool.address.lower():
-            minter = archive.call(
-                block, pool.lp.address, "minter()", returns=("address",)
+            registry = archive.call(
+                block, ADDRESS_PROVIDER, "get_registry()", returns=("address",)
             )
-            if minter.lower() != pool.address.lower():
-                raise Unavailable("LP minter differs from the catalog pool")
+            linked_lp = archive.call(
+                block,
+                registry,
+                "get_lp_token(address)",
+                ("address",),
+                (pool.address,),
+                ("address",),
+            )
+            if linked_lp.lower() != pool.lp.address:
+                raise Unavailable("historical registry LP differs from the catalog")
         for index, coin in enumerate(strategy.pool.coins):
             actual = archive.call(
                 block,

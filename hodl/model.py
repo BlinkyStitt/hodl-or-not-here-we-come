@@ -18,6 +18,17 @@ class Reverted(Unavailable):
     """A contract rejected the hypothetical action at the selected block."""
 
 
+class DepositLimit(Unavailable):
+    """The requested underlying amount exceeds a known deposit capacity."""
+
+    def __init__(self, requested: int, capacity: int):
+        self.capacity = max(0, capacity)
+        super().__init__(
+            f"Yearn deposit amount {requested} exceeds historical capacity "
+            f"{self.capacity} underlying units"
+        )
+
+
 @dataclass(frozen=True)
 class Token:
     symbol: str = field(compare=False)

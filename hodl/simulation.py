@@ -11,7 +11,7 @@ from pathlib import Path
 from hodl.catalog import CRV, ETH, VerifiedStrategy
 from hodl.data import Archive, Prices
 from hodl.fork import Fork
-from hodl.model import Block, Reverted, Token, Unaffordable, Unavailable
+from hodl.model import Block, DepositLimit, Reverted, Token, Unaffordable, Unavailable
 from hodl.positions import (
     Integrals,
     accounting_assets,
@@ -130,17 +130,24 @@ class Simulator:
         prefix: tuple[str, ...] = (),
     ) -> Execution:
         price = self.prices.at(source, fork.block.timestamp).usd
-        reserve = 0
-        for _ in range(8):
-            if budget <= reserve:
+        reserve: int | None = None
+        candidate = budget
+        for _ in range(budget.bit_length() + 8):
+            if candidate <= 0:
                 raise Unaffordable("proceeds cannot cover the deposit and gas")
             with fork.snapshot():
-                amount, route = deposit(
-                    fork, router, verified, source, budget - reserve
-                )
+                try:
+                    amount, route = deposit(fork, router, verified, source, candidate)
+                except DepositLimit as exc:
+                    if reserve is not None or exc.capacity == 0:
+                        raise
+                    # Measure a permitted deposit before sizing the gas-funded entry.
+                    # The snapshot discards this probe and all of its transactions.
+                    candidate //= 2
+                    continue
                 gas_wei, gas_usd = self.costs(fork.block, fork.gas_units)
                 debit = source.units(gas_usd / price, round_up=True)
-                if debit <= reserve:
+                if reserve is not None and debit <= reserve:
                     return Execution(
                         amount,
                         reserve - debit,
@@ -150,7 +157,8 @@ class Simulator:
                         (*prefix, *route),
                         tuple(fork.transactions),
                     )
-            reserve = max(reserve, debit)
+            reserve = max(reserve or 0, debit)
+            candidate = budget - reserve
         raise Unavailable("gas funding did not converge for the selected route")
 
     def enter(

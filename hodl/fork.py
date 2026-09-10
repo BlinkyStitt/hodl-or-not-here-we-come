@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from typing import Any
 
-from eth_abi import decode, encode
+from eth_abi import decode
 from web3 import HTTPProvider, Web3
 
 from hodl.catalog import ETH, WETH
@@ -381,30 +381,40 @@ class Fork:
                 raise Unavailable(f"storage layout changed for {address} {getter}")
             return
         probe = 2**71 + 19
-        # Solidity and Vyper use opposite mapping key/slot order.
-        for base in range(200):
-            for solidity in (True, False):
-                slot = base
-                for key in keys:
-                    types = (
-                        ("address", "uint256") if solidity else ("uint256", "address")
-                    )
-                    values = (key, slot) if solidity else (slot, key)
-                    slot = int.from_bytes(Web3.keccak(encode(types, values)), "big")
-                old = self.rpc("eth_getStorageAt", [address, hex(slot), "latest"])
-                write(slot, probe << shift)
-                try:
-                    matches = read() == probe
-                except Unavailable:
-                    matches = False
-                finally:
-                    self.rpc("anvil_setStorageAt", [address, hex(slot), old])
-                if matches:
-                    self.slots[cache_key] = slot
-                    write(slot, value << shift)
-                    if read() != value:
-                        raise Unavailable(f"cannot seed {getter} exactly")
-                    return
+        trace = self.rpc(
+            "debug_traceCall",
+            [
+                {
+                    "to": address,
+                    "from": ACCOUNT,
+                    "data": calldata(getter, ("address",) * len(keys), keys),
+                },
+                "latest",
+                {"disableMemory": True, "disableStorage": True},
+            ],
+        )
+        # Trace the getter instead of assuming mapping bases fit a small range.
+        # Factory gauges place mappings after two enormous fixed-size arrays.
+        slots = dict.fromkeys(
+            int(step["stack"][-1], 16)
+            for step in trace["structLogs"]
+            if step["op"] == "SLOAD"
+        )
+        for slot in slots:
+            old = self.rpc("eth_getStorageAt", [address, hex(slot), "latest"])
+            write(slot, probe << shift)
+            try:
+                matches = read() == probe
+            except Unavailable:
+                matches = False
+            finally:
+                self.rpc("anvil_setStorageAt", [address, hex(slot), old])
+            if matches:
+                self.slots[cache_key] = slot
+                write(slot, value << shift)
+                if read() != value:
+                    raise Unavailable(f"cannot seed {getter} exactly")
+                return
         raise Unavailable(f"unsupported storage layout: {address} {getter}")
 
     def wrap(self, amount: int) -> None:
