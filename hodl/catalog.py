@@ -122,6 +122,13 @@ def strategies() -> tuple[Strategy, ...]:
         ("wbtc-v2", "0xA696a63cc78DfFa1a63E9E50587C197387FF6C7E", "0.3.5", WBTC, None),
         ("weth-v2", "0xa258C4606Ca8206D8aA700cE2143D7db854D168c", "0.4.2", WETH, None),
         (
+            "eth-steth-v2",
+            "0xdCD90C7f6324cfa40d7169ef80b12031770B4325",
+            "0.3.0",
+            steth.lp,
+            steth,
+        ),
+        (
             "tricrypto2-v2",
             "0xE537B5cc158EB71037D4125BDD7538421981E6AA",
             "0.4.3",

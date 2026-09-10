@@ -55,6 +55,9 @@ def deposit_coin(strategy: Strategy, source: Token) -> Token:
 
 def free_funds(fork: Fork, strategy: Strategy, *, deposit: bool = False) -> int:
     total = fork.call(strategy.address, "totalAssets()")
+    # 0.3.0 has no locked-profit mechanism for either issuance or redemption.
+    if strategy.version == "0.3.0":
+        return total
     # 0.3.5 issues shares against totalAssets, but redeems against unlocked funds.
     if strategy.version == "0.3.5" and deposit:
         return total

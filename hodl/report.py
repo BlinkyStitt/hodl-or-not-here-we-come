@@ -2,12 +2,14 @@
 
 import csv
 import json
+from collections import defaultdict
 from dataclasses import asdict
 from datetime import UTC, datetime
 from decimal import Decimal
+from operator import itemgetter
 from pathlib import Path
 
-from hodl.catalog import assets
+from hodl.catalog import WETH, assets, strategies
 from hodl.engine import Report
 from hodl.model import Observation
 
@@ -72,6 +74,18 @@ def assumptions() -> tuple[str, ...]:
             "Unavailable or incomplete rows are not complete net outcomes; "
             "blank values do not mean zero."
         ),
+        (
+            "Best means the highest complete ending quantity among selected "
+            "options and holding the same asset at that observation."
+        ),
+        (
+            "The single-asset vault benchmark uses a selected vault whose "
+            "underlying is the starting asset (WETH for ETH), without an LP."
+        ),
+        (
+            "Benchmark winners are historical comparisons, not assumed "
+            "migrations. Vault fees and harvests remain in share value."
+        ),
     )
 
 
@@ -106,30 +120,111 @@ def row_record(row: Observation) -> dict:
     }
 
 
-def table(rows: list[Observation]) -> str:
+def comparison_records(rows: list[Observation]) -> list[dict]:
+    """Compare only matching assets and dates, using complete net proceeds."""
+    groups: dict[tuple[str, int], list[Observation]] = defaultdict(list)
+    for row in rows:
+        groups[row.asset, row.target].append(row)
+    tokens = assets()
+    catalog = strategies()
+    benchmarks = {}
+    for key, group in groups.items():
+        token = WETH if key[0] == "ETH" else tokens.get(key[0])
+        vault_names = {
+            strategy.name
+            for strategy in catalog
+            if strategy.kind in ("v2", "v3")
+            and strategy.pool is None
+            and strategy.underlying == token
+        }
+        complete = [
+            (row.strategy, row.end_quantity)
+            for row in group
+            if row.status == "complete" and row.end_quantity is not None
+        ]
+
+        def best(options: list[tuple[str, Decimal]]) -> tuple[str, Decimal] | None:
+            return max(options, key=itemgetter(1), default=None)
+
+        winner = best(complete)
+        vault = best([option for option in complete if option[0] in vault_names])
+        if vault:
+            vault_status = "complete"
+        elif not vault_names:
+            vault_status = "not in catalog"
+        elif any(row.strategy in vault_names for row in group):
+            vault_status = "unavailable"
+        else:
+            vault_status = "not selected"
+        benchmarks[key] = winner, vault, vault_status
+    records = []
+    for row in rows:
+        winner, vault, vault_status = benchmarks[row.asset, row.target]
+        quantity = row.end_quantity if row.status == "complete" else None
+        records.append(
+            {
+                **row_record(row),
+                "token_return_fraction": (
+                    quantity / row.start_quantity - 1
+                    if quantity is not None and row.start_quantity
+                    else None
+                ),
+                "best_strategy": winner[0] if winner else None,
+                "versus_best_quantity": (
+                    quantity - winner[1]
+                    if quantity is not None and winner is not None
+                    else None
+                ),
+                "single_vault_strategy": vault[0] if vault else None,
+                "single_vault_status": vault_status,
+                "versus_single_vault_quantity": (
+                    quantity - vault[1]
+                    if quantity is not None and vault is not None
+                    else None
+                ),
+            }
+        )
+    return records
+
+
+def asset_table(rows: list[Observation]) -> str:
+    compared = comparison_records(rows)
+    first = compared[0]
+    lines = [
+        f"{rows[0].asset}: quantities and gaps use the starting asset. "
+        f"Best selected option: {first['best_strategy'] or 'unavailable'}. "
+        "Single-asset vault: "
+        f"{first['single_vault_strategy'] or first['single_vault_status']}."
+    ]
     fields = (
         "Strategy",
-        "Asset",
         "Status",
         "Start quantity",
         "End quantity",
+        "Token %",
+        "vs best quantity",
+        "vs vault quantity",
         "End USD",
-        "Net %",
+        "Net USD %",
         "vs hold USD",
         "Gas USD",
         "Accounting USD",
     )
     records = [fields]
-    for row in rows:
+    for row, comparison in zip(rows, compared, strict=True):
         records.append(
             tuple(
                 scalar(value)
                 for value in (
                     row.strategy,
-                    row.asset,
                     row.status,
                     row.start_quantity,
                     row.end_quantity,
+                    comparison["token_return_fraction"] * 100
+                    if comparison["token_return_fraction"] is not None
+                    else None,
+                    comparison["versus_best_quantity"],
+                    comparison["versus_single_vault_quantity"],
                     row.end_usd,
                     row.net_return * 100 if row.net_return is not None else None,
                     row.versus_hold_usd,
@@ -154,7 +249,14 @@ def table(rows: list[Observation]) -> str:
             output.append(
                 f"  {row.strategy}/{row.asset} exit route: " + "; ".join(row.route)
             )
-    return "\n".join(output)
+    return "\n".join([*lines, *output])
+
+
+def table(rows: list[Observation]) -> str:
+    groups: dict[tuple[str, int], list[Observation]] = defaultdict(list)
+    for row in rows:
+        groups[row.asset, row.target].append(row)
+    return "\n\n".join(asset_table(group) for group in groups.values())
 
 
 def render(report: Report) -> str:
@@ -199,7 +301,7 @@ def render(report: Report) -> str:
 
 
 def export_csv(report: Report, path: Path) -> None:
-    records = [row_record(row) for row in report.observations]
+    records = comparison_records(report.observations)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", newline="") as stream:
         writer = csv.DictWriter(

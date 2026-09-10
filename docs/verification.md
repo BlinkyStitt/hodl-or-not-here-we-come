@@ -1,6 +1,32 @@
 # Verification status
 
-All **80 tests pass**, including all 18 fixed-block mainnet tests. Validation
+The ETH/stETH vault addition has **69 passing local tests** and a passing
+fixed-block mainnet check for the new vault. Its contract is
+`0xdCD90C7f6324cfa40d7169ef80b12031770B4325`, version `0.3.0`, with underlying
+`0x06325440D014e39736583c165C2963BA99fAf14E`. It deployed at block 11,654,862
+(`0x0d39d66f9dcc21aafaa722e18cf6477394013d64ea48b22d4b94e61888c48c2b`).
+The mainnet check at block 14,000,000 verified issuance, redemption, receipt gas,
+and the deployment boundary. The adapter follows the
+[deployed version's rules](https://github.com/yearn/yearn-vaults/blob/v0.3.0/contracts/Vault.vy)
+for total-asset share accounting without locked profit. Harvests and fees remain
+in the share value; the calculation does not add or subtract them again.
+
+The later complete-suite attempt passed all 69 local tests, but all 19 mainnet
+cases failed during setup because the configured RPC reset connections.
+An independent curl check also returned `Connection reset by peer`. The new
+ETH period report and its offline replay remain pending until RPC access returns.
+Ruff formatting, Ruff checks, ty checks, and wheel/source builds pass for the
+addition. Reporting tests cover token returns, gaps against both benchmarks,
+matching dates and assets, incomplete results, and missing plain-asset vaults.
+
+The reports below record the original release at commit `567e7c4`, before the
+ETH/stETH vault and token-unit benchmark columns were added. Their manifests
+retain the calculation fingerprint. Use that commit for byte-exact replay of
+those files, or regenerate them with the current code and catalog.
+
+## Original release validation
+
+All **80 tests passed**, including all 18 fixed-block mainnet tests. Validation
 used the owner's Ethereum archive node. Ruff formatting, Ruff checks, and ty
 checks pass. The local Anvil harness verifies gas rules before and after
 EIP-1559, fixed timestamps, snapshots, concurrent archive reads, and rejection

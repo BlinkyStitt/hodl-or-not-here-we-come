@@ -66,13 +66,39 @@ uv run hodl list
 ```
 
 The fixed catalog contains four Curve pools, each with LP and gauge positions,
-and six Yearn vaults. It retains retired contracts. `hodl list` prints full
+and seven Yearn vaults. It retains retired contracts. `hodl list` prints full
 contract and LP addresses, versions, deployment blocks, and dates verified from
 archive state. Without RPC configuration, it prints unverified dates and returns
 status 2. The factory gauge for CRV/cvxCRV v2 resolves from historical factory
 state once at entry. A run never changes its selected gauge.
 
 ## Results and costs
+
+Tables group results by starting asset. They show token return, the quantity gap
+against the best complete selected option, and the quantity gap against a plain
+vault for that asset. Holding the same asset can be the best option. The vault
+benchmark requires a matching underlying token, with WETH accepted for ETH;
+LP vaults do not qualify. If several matching vaults are selected, the benchmark
+uses the highest complete ending quantity at that observation. The report names
+both benchmarks and marks missing or unavailable vault benchmarks explicitly.
+
+For an ETH comparison that retains ETH exposure, select the pool positions and
+both vaults:
+
+```bash
+uv run hodl compare --start 2022-01-01 --end 2022-04-01 --assets ETH \
+  --strategy curve-eth-steth-lp --strategy curve-eth-steth-gauge \
+  --strategy yearn-weth-v2 --strategy yearn-eth-steth-v2 \
+  --csv reports/eth-vaults.csv
+```
+
+This compares holding ETH, the plain WETH vault, the Curve ETH/stETH LP, its
+gauge, and the Yearn ETH/stETH vault. Each ends in ETH after estimated costs.
+The historical Yearn pool vault is `0xdCD90C7f6324cfa40d7169ef80b12031770B4325`.
+Its share accounting includes its harvests and fees. The engine does not add
+manual gauge compounding or subtract another vault fee from this position.
+"Best" refers to the selected options at each observation; it does not assume
+that the position migrates between the winning strategies.
 
 The final and monthly tables show starting quantity, ending quantity, ending
 USD value, net return, estimated gas costs, and gain or loss against holding
@@ -94,7 +120,9 @@ swap fees and price impact. This is not a search across all exchanges. A pool
 uses the starting coin when supported; otherwise it uses its supported
 USDC, USDT, ETH, or CRV entry coin.
 
-The engine uses deployed Yearn deposit and redemption methods. V2 `0.3.5`
+The engine uses deployed Yearn deposit and redemption methods. V2 `0.3.0`
+uses total assets for both deposit shares and redemption value, without the
+later locked-profit mechanism. V2 `0.3.5`
 issues shares against total assets; later supported V2 versions issue shares
 against unlocked assets. Redemption accounts for locked profit. V3 uses its
 preview, conversion, and limit methods. The tool does not add yield or deduct
@@ -134,6 +162,10 @@ DefiLlama price selection accepts only points at or before the block timestamp
 and no more than 24 hours old. It never substitutes a current price. CSV contains
 the same monthly observations as the text report. Its adjacent JSON file records
 scenario inputs, block hashes, contracts, assumptions, and dated actions.
+CSV `token_return_fraction` measures the change in starting-asset quantity;
+`net_return_fraction` measures the USD return. The two benchmark gaps are
+`versus_best_quantity` and `versus_single_vault_quantity`, with their strategy
+names and the single-vault availability status in adjacent columns.
 
 Use an explicit end date for an offline rerun. Keep the same RPC URL as the
 cache source identifier; offline mode makes no remote requests:

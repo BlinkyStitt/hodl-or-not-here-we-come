@@ -110,10 +110,28 @@ def test_rewards_use_integrals_not_current_rate_and_apply_unboosted_crv():
 
 def test_catalog_contains_all_fixed_positions_and_actual_wrapped_assets():
     catalog = strategies()
-    assert len(catalog) == 14
-    assert len({s.name for s in catalog}) == 14
+    assert len(catalog) == 15
+    assert len({s.name for s in catalog}) == 15
     assert sum(s.kind == "gauge" for s in catalog) == 4
     assert all(s.gauge is None for s in catalog if s.kind != "gauge")
     assert assets()["USD"] == USDC
     assert assets()["BTC"] == WBTC
     assert next(s for s in catalog if s.name == "yearn-wbtc-v2").version == "0.3.5"
+
+
+@pytest.mark.parametrize("deposit", [False, True])
+def test_yearn_030_uses_total_assets_without_locked_profit(monkeypatch, deposit):
+    from hodl.fork import Fork
+    from hodl.positions import free_funds
+
+    strategy = next(s for s in strategies() if s.name == "yearn-eth-steth-v2")
+    fork = object.__new__(Fork)
+
+    def call(address, signature):
+        assert address == strategy.address
+        # Version 0.3.0 does not have the later locked-profit getters.
+        assert signature == "totalAssets()"
+        return 1200
+
+    monkeypatch.setattr(fork, "call", call)
+    assert free_funds(fork, strategy, deposit=deposit) == 1200
