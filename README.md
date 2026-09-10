@@ -123,7 +123,11 @@ Conversions search direct routes and routes through WETH, USDC, USDT, or WBTC,
 with no more than two swaps. They cover the catalog Curve pools and Uniswap V3
 fee tiers 100, 500, 3000, and 10000. The selected route maximizes output value
 after measured gas among supported candidates. Exact fork execution includes
-swap fees and price impact. This is not a search across all exchanges. A pool
+swap fees and price impact. Each V3 hop must spend its full requested input.
+The search rejects partial fills and tries other candidates. If no supported
+route fills completely, the report marks the conversion unavailable, with the
+requested and spent amounts in the reason. This is not a search across all
+exchanges. A pool
 uses the starting coin when supported; otherwise it uses its supported
 USDC, USDT, ETH, or CRV entry coin.
 
@@ -140,6 +144,12 @@ Curve gauge accounting uses cumulative historical integrals. Local boundary
 checkpoints include accrued CRV and extra rewards. CRV uses an unboosted working
 balance of 40% of LP balance. Removed reward tokens that the adapter cannot
 claim remain visible as unsupported results.
+
+Each completed gauge deposit or compound saves the account's reward integrals,
+checkpoint, cumulative CRV entitlement, minted CRV, and extra-reward claim state.
+Later forks restore this state before measuring claims. This preserves the gas
+cost of updating existing claim counters. Skipped compounds and hypothetical
+exits do not advance the saved state.
 
 Gas units come from local receipts for approvals, wrapping, swaps, deposits,
 staking, claims, and withdrawals. The fork uses the historical EVM rules. The

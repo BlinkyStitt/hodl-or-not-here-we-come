@@ -13,12 +13,13 @@ from hodl.data import Archive, Prices
 from hodl.fork import Fork
 from hodl.model import Block, DepositLimit, Reverted, Token, Unaffordable, Unavailable
 from hodl.positions import (
-    Integrals,
+    GaugeState,
+    RewardState,
     accounting_assets,
-    checkpoint_integrals,
     claim,
     deposit,
     deposit_coin,
+    gauge_state,
     seed_gauge,
     share_token,
     withdraw,
@@ -35,6 +36,7 @@ class Execution:
     gas_usd: Decimal
     route: tuple[str, ...]
     transactions: tuple[dict, ...]
+    gauge_state: GaugeState | None = None
 
 
 class Simulator:
@@ -112,6 +114,7 @@ class Simulator:
             return result
 
         raw = self.evidence("execution-v1", block, [kind, request], calculate)
+        state = raw["gauge_state"]
         return Execution(
             raw["amount"],
             raw["dust"],
@@ -120,18 +123,22 @@ class Simulator:
             Decimal(raw["gas_usd"]),
             tuple(raw["route"]),
             tuple(raw["transactions"]),
-        )
-
-    def integrals(self, block: Block, verified: VerifiedStrategy) -> Integrals:
-        def calculate() -> dict:
-            with Fork(self.archive, block) as fork:
-                return asdict(checkpoint_integrals(fork, verified))
-
-        raw = self.evidence("integrals-v1", block, asdict(verified), calculate)
-        return Integrals(
-            raw["crv"],
-            tuple((Token(**t), value) for t, value in raw["extra"]),
-            raw["killed"],
+            GaugeState(
+                state["integral"],
+                state["fraction"],
+                state["minted"],
+                state["checkpoint"],
+                tuple(
+                    RewardState(
+                        Token(**reward["token"]),
+                        reward["integral"],
+                        reward["claim_data"],
+                    )
+                    for reward in state["extra"]
+                ),
+            )
+            if state is not None
+            else None,
         )
 
     def funded_deposit(
@@ -170,6 +177,7 @@ class Simulator:
                         gas_usd,
                         (*prefix, *route),
                         tuple(fork.transactions),
+                        gauge_state(fork, verified) if verified.gauge else None,
                     )
             reserve = max(reserve or 0, debit)
             candidate = budget - reserve
@@ -198,7 +206,7 @@ class Simulator:
         verified: VerifiedStrategy,
         target: Token,
         shares: int,
-        baseline: Integrals | None,
+        state: GaugeState | None,
         idle: dict[Token, int],
     ) -> Execution:
         def calculate() -> Execution:
@@ -207,8 +215,8 @@ class Simulator:
                 route: tuple[str, ...] = ()
                 rewards_output = 0
                 rewards: dict[Token, int] = {}
-                if baseline is not None:
-                    seed_gauge(fork, verified, shares, baseline)
+                if state is not None:
+                    seed_gauge(fork, verified, shares, state)
                     rewards = claim(fork, verified)
                 else:
                     fork.seed(share_token(verified.strategy), shares)
@@ -236,7 +244,7 @@ class Simulator:
                 "strategy": asdict(verified),
                 "target": asdict(target),
                 "shares": shares,
-                "baseline": asdict(baseline) if baseline else None,
+                "state": asdict(state) if state else None,
                 "idle": [(asdict(t), n) for t, n in idle.items()],
             },
             calculate,
@@ -247,12 +255,12 @@ class Simulator:
         block: Block,
         verified: VerifiedStrategy,
         shares: int,
-        baseline: Integrals,
+        state: GaugeState,
         idle: dict[Token, int],
     ) -> Execution:
         def calculate() -> Execution:
             with Fork(self.archive, block) as fork:
-                seed_gauge(fork, verified, shares, baseline)
+                seed_gauge(fork, verified, shares, state)
                 router = Router(fork, self.prices)
                 proceeds = 0
                 route: tuple[str, ...] = ()
@@ -281,7 +289,7 @@ class Simulator:
             {
                 "strategy": asdict(verified),
                 "shares": shares,
-                "baseline": asdict(baseline),
+                "state": asdict(state),
                 "idle": [(asdict(t), n) for t, n in idle.items()],
             },
             calculate,

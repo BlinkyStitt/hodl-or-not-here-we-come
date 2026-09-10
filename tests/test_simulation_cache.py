@@ -4,8 +4,10 @@ from pathlib import Path
 import pytest
 
 from hodl.cache import Cache
+from hodl.catalog import CRV
 from hodl.data import Archive, Prices
 from hodl.model import Block, Unaffordable, Unavailable
+from hodl.positions import GaugeState, RewardState
 from hodl.simulation import Execution, Simulator
 
 
@@ -53,7 +55,10 @@ def test_cached_action_and_unaffordable_result_reproduce_offline(tmp_path):
     cache = Cache(path)
     block = Block(14_000_000, "hash", 1640995200)
     simulator = Simulator(Archive("http://unused.invalid", cache), Prices(cache))
-    expected = Execution(123, 2, 50000, 50000, Decimal("0.12"), ("route",), ())
+    state = GaugeState(
+        10**20, 12345, 12300, block.timestamp, (RewardState(CRV, 42, (17 << 128) + 9),)
+    )
+    expected = Execution(123, 2, 50000, 50000, Decimal("0.12"), ("route",), (), state)
     assert simulator.cached("enter", block, {}, lambda: expected) == expected
 
     def unaffordable():

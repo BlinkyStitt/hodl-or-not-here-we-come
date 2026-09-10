@@ -153,6 +153,23 @@ def test_local_fork_pins_clock_measures_gas_and_restores_snapshot(
                 )
                 == 1
             )
+            # A getter can expose only half of a packed storage word. Saving
+            # and restoring the account must also preserve its hidden half.
+            address = "0x0000000000000000000000000000000000001235"
+            code = "0x6000546f" + "ff" * 16 + "1660005260206000f3"
+            fork.rpc("anvil_setCode", [address, code])
+            packed = (17 << 128) + 9
+            fork.set_mapping(
+                address, "claimed_reward(address)", (ACCOUNT,), packed, mask=2**128 - 1
+            )
+            assert (
+                fork.call(address, "claimed_reward(address)", ("address",), (ACCOUNT,))
+                == 9
+            )
+            assert (
+                fork.mapping_word(address, "claimed_reward(address)", (ACCOUNT,))
+                == packed
+            )
         assert archive.request("eth_blockNumber", []) == "0x1"
         assert (
             cache.db.execute(

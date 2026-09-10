@@ -1,5 +1,6 @@
 import csv
 import json
+from dataclasses import replace
 from decimal import Decimal
 
 import pytest
@@ -8,7 +9,7 @@ from hodl.catalog import USDC, VerifiedStrategy, strategies
 from hodl.data import Archive, Prices
 from hodl.engine import compare
 from hodl.model import Block, Price, Scenario, Unaffordable, Unavailable, parse_date
-from hodl.positions import Integrals
+from hodl.positions import GaugeState
 from hodl.report import export_csv
 from hodl.simulation import Execution, Simulator
 
@@ -34,32 +35,50 @@ class FixtureSimulator(Simulator):
         self.engine = {"source": "test fixture"}
         self.entries = []
         self.exits = []
+        self.exit_states = []
         self.compounds = []
         self.skip = skip
         self.missing = missing
 
     @staticmethod
-    def result(amount, cost):
-        return Execution(amount, 0, cost, cost, Decimal(cost), (), ())
+    def result(amount, cost, state=None):
+        return Execution(amount, 0, cost, cost, Decimal(cost), (), (), state)
 
     def enter(self, block, verified, source, amount):
         self.entries.append((block, amount))
-        return self.result(amount - 10 * 10**6, 10)
+        state = (
+            GaugeState(block.timestamp, 0, 0, block.timestamp, ())
+            if verified.gauge
+            else None
+        )
+        return self.result(amount - 10 * 10**6, 10, state)
 
-    def exit(self, block, verified, target, shares, baseline, idle):
+    def exit(self, block, verified, target, shares, state, idle):
         self.exits.append(shares)
-        return self.result(shares - 5 * 10**6, 5)
+        self.exit_states.append(state)
+        return self.result(
+            shares - 5 * 10**6,
+            5,
+            replace(state, fraction=999, minted=999) if state else None,
+        )
 
-    def integrals(self, block, verified):
-        return Integrals(block.timestamp, (), False)
-
-    def compound(self, block, verified, shares, baseline, idle):
-        self.compounds.append((shares, baseline.crv))
+    def compound(self, block, verified, shares, state, idle):
+        self.compounds.append((shares, state))
         if self.missing:
             raise Unavailable("unsupported reward token")
         if self.skip and len(self.compounds) == 1:
             raise Unaffordable("rewards below gas cost")
-        return self.result(10 * 10**6, 2)
+        return self.result(
+            10 * 10**6,
+            2,
+            GaugeState(
+                block.timestamp,
+                state.fraction + 10,
+                state.minted + 10,
+                block.timestamp,
+                (),
+            ),
+        )
 
 
 @pytest.fixture
@@ -109,6 +128,9 @@ def test_monthly_compounding_changes_shares_but_final_exit_does_not_compound(set
     report = run_fixture(setup, simulator, "curve-3pool-gauge")
     assert simulator.exits == [100 * 10**6, 110 * 10**6, 110 * 10**6]
     assert [shares for shares, _ in simulator.compounds] == [90 * 10**6, 100 * 10**6]
+    assert [state.minted for _, state in simulator.compounds] == [0, 10]
+    assert [state.minted for state in simulator.exit_states] == [10, 20, 20]
+    assert simulator.exit_states[0] == simulator.compounds[1][1]
     rows = [row for row in report.observations if row.strategy == "curve-3pool-gauge"]
     assert rows[-1].end_quantity == Decimal(105)
     assert rows[-1].gas_usd == Decimal(19)
@@ -125,6 +147,7 @@ def test_rewards_below_cost_keep_original_checkpoint_and_principal(setup):
     report = run_fixture(setup, simulator, "curve-3pool-gauge")
     assert simulator.exits == [90 * 10**6, 100 * 10**6, 100 * 10**6]
     assert simulator.compounds[0] == simulator.compounds[1]
+    assert [state.minted for state in simulator.exit_states] == [0, 10, 10]
     events = report.actions["curve-3pool-gauge/USD"]
     assert events[1].kind == "skipped-compound"
     assert events[1].gas_usd == 0

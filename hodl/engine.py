@@ -151,7 +151,7 @@ def compare(
             events: list[Action] = []
             report.actions[key] = events
             position = None
-            baseline = None
+            state = None
             initial = None
             failure = entry_error
             failed_status = "unavailable-entry"
@@ -162,10 +162,9 @@ def compare(
                 initial = token.units(scenario.usd_value / price)
                 if not initial:
                     raise Unavailable("starting amount rounds to zero")
-                if strategy.kind == "gauge":
-                    baseline = simulator.integrals(start, verified)
                 entry = simulator.enter(start, verified, token, initial)
                 position = Position(entry.amount, entry.dust)
+                state = entry.gauge_state
                 events.append(action("entry", scenario.start, start, entry))
             except Unavailable as exc:
                 failure = str(exc)
@@ -185,16 +184,15 @@ def compare(
                         )
                     )
                     continue
-                if baseline is not None and date != scenario.end:
+                if state is not None and date != scenario.end:
                     try:
-                        next_baseline = simulator.integrals(block, verified)
                         compound = simulator.compound(
-                            block, verified, position.shares, baseline, position.idle
+                            block, verified, position.shares, state, position.idle
                         )
                         position.shares += compound.amount
                         coin = deposit_coin(strategy, CRV)
                         position.idle = {coin: compound.dust} if compound.dust else {}
-                        baseline = next_baseline
+                        state = compound.gauge_state
                         events.append(action("compound", date, block, compound))
                     except Unaffordable as exc:
                         note = "compounding skipped; rewards retained: " + str(exc)
@@ -220,7 +218,7 @@ def compare(
                 try:
                     # An estimated exit does not change the position or its actions.
                     exit_result = simulator.exit(
-                        block, verified, token, position.shares, baseline, position.idle
+                        block, verified, token, position.shares, state, position.idle
                     )
                     quantity = token.quantity(exit_result.amount + position.start_dust)
                     price = prices.at(token, block.timestamp).usd

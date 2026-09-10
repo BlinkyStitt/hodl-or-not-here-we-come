@@ -111,6 +111,7 @@ class Router:
                 label=hop.label,
             )
         else:
+            source_before = self.fork.balance(hop.source)
             quote = self.fork.call(
                 QUOTER,
                 "quoteExactInputSingle(address,address,uint24,uint256,uint160)",
@@ -138,6 +139,12 @@ class Router:
                 ),
                 label=hop.label,
             )
+            spent = source_before - self.fork.balance(hop.source)
+            if spent != amount:
+                raise Reverted(
+                    f"partial Uniswap V3 fill: requested {amount}, spent {spent} "
+                    f"{hop.source.symbol} units on {hop.label}"
+                )
         output = self.fork.balance(hop.target) - before
         if hop.target == ETH:
             output += (self.fork.gas_units - gas_before) * self.fork.archive.gas_price(

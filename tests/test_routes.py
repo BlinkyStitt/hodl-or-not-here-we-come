@@ -48,6 +48,81 @@ class DollarPrices(Prices):
         return Price(Decimal(1), timestamp, "test")
 
 
+class SwapFork(RouteFork):
+    def __init__(self, partial_fee):
+        super().__init__()
+        self.partial_fee = partial_fee
+        self.balances = {WBTC: 101, WETH: 7, USDC: 13}
+        self.transactions = []
+
+    def balance(self, token):
+        return self.balances.get(token, 0)
+
+    def approve(self, token, spender, amount):
+        pass
+
+    def call(self, *args, **kwargs):
+        return 200
+
+    def transact(self, address, signature, types=(), args: tuple = (), **kwargs):
+        source, target, fee, _, _, amount, _, _ = args[0]
+        tokens = {token.address: token for token in self.balances}
+        spent = amount - 1 if fee == self.partial_fee else amount
+        self.balances[tokens[source]] -= spent
+        self.balances[tokens[target]] += 200
+        self.gas_units += 1
+        self.transactions.append({"label": kwargs["label"]})
+
+    @contextmanager
+    def snapshot(self):
+        balances = self.balances.copy()
+        transactions = self.transactions.copy()
+        with super().snapshot():
+            try:
+                yield
+            finally:
+                self.balances = balances
+                self.transactions = transactions
+
+
+@pytest.mark.parametrize("partial_hop", [0, 1])
+def test_partial_v3_fill_rejects_the_whole_route(monkeypatch, partial_hop):
+    fork = SwapFork(partial_fee=(500, 3000)[partial_hop])
+    router = Router(fork, DollarPrices())
+    path = (Hop(WBTC, WETH, fee=500), Hop(WETH, USDC, fee=3000))
+    monkeypatch.setattr(
+        router,
+        "hops",
+        lambda source, target: tuple(
+            hop for hop in path if (source, target) == (hop.source, hop.target)
+        ),
+    )
+    with pytest.raises(Unavailable, match="partial Uniswap V3 fill"):
+        router.convert(WBTC, USDC, 100)
+    assert fork.balances == {WBTC: 101, WETH: 7, USDC: 13}
+    assert fork.transactions == []
+    assert fork.gas_units == 0
+
+
+def test_partial_v3_candidate_does_not_hide_a_full_fill(monkeypatch):
+    fork = SwapFork(partial_fee=500)
+    router = Router(fork, DollarPrices())
+    monkeypatch.setattr(
+        router,
+        "hops",
+        lambda source, target: (
+            (Hop(WBTC, USDC, fee=500), Hop(WBTC, USDC, fee=3000))
+            if (source, target) == (WBTC, USDC)
+            else ()
+        ),
+    )
+    output, route = router.convert(WBTC, USDC, 100)
+    assert output == 200
+    assert fork.balances == {WBTC: 1, WETH: 7, USDC: 213}
+    assert len(route) == 1
+    assert "fee=3000" in route[0]
+
+
 class CandidateRouter(Router):
     def __init__(self, *, error=None):
         super().__init__(RouteFork(), DollarPrices())

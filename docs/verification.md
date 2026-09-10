@@ -1,7 +1,47 @@
 # Verification status
 
-The ETH/stETH vault and USD benchmark changes have **72 passing local tests**.
-The new vault also passed its fixed-block mainnet check. Its contract is
+All **99 tests pass**: 76 local tests and 23 fixed-block mainnet tests. The four
+new gauge regressions also pass using saved mainnet state with
+`Cache(offline=True)` and remote RPC requests disabled. Ruff formatting, Ruff
+checks, ty, and wheel/source builds pass.
+
+The V3 regression tests first failed on the old implementation. They cover an
+unspent unit in either hop, rollback of the whole candidate, and selection of an
+alternative route that spends the full input. The guard checks source-token
+balance changes because the deployed
+[Uniswap router](https://github.com/Uniswap/v3-periphery/blob/main/contracts/SwapRouter.sol)
+returns output without requiring that all requested input was spent.
+
+Gauge checks restore a real prior claim, verify that the same boundary pays no
+rewards twice, and compare later rewards and receipt gas against reset counters.
+All four versions return identical rewards in the two gas-control cases. Resetting
+`integrate_fraction` and `MINTER.minted` adds exactly **34,200 gas** to the CRV
+claim. The saved state follows the
+[Curve minter accounting](https://github.com/curvefi/curve-dao-contracts/blob/master/contracts/Minter.vy).
+
+| Gauge | Later claim block | Restored-counter gas | Reset-counter gas |
+|---|---:|---:|---:|
+| 3pool | 14297758 | 352235 | 386435 |
+| tricrypto2 | 14297758 | 352337 | 386537 |
+| ETH/stETH | 14297758 | 352525 | 386725 |
+| CRV/cvxCRV v2 | 19422438 | 389023 | 423223 |
+
+The first three checks use blocks 13916165, 14116761, and 14297758. The factory
+gauge check uses 18994253, 19215377, and 19422438. Their hashes are recorded in
+the [2022 Q1](samples/2022-q1.json) and [2024 CRV](samples/2024-crv-gauge-compound.json)
+sample manifests and CSV observations. Local tests also verify packed reward
+storage, claim-state cache serialization, capture before snapshot rollback, and
+state persistence across skipped compounds and hypothetical exits.
+
+The offline checks exposed an Anvil receipt race. The harness now mines each
+local transaction before reading its receipt, so it does not request an unmined
+local transaction's receipt from the archive. Timestamp, gas, and snapshot checks
+pass with this mining sequence.
+
+These fixes change the calculation fingerprint, so earlier action results
+require regeneration; they cannot supply current net rankings.
+
+The ETH/stETH vault previously passed its fixed-block mainnet check. Its contract is
 `0xdCD90C7f6324cfa40d7169ef80b12031770B4325`, version `0.3.0`, with underlying
 `0x06325440D014e39736583c165C2963BA99fAf14E`. It deployed at block 11,654,862
 (`0x0d39d66f9dcc21aafaa722e18cf6477394013d64ea48b22d4b94e61888c48c2b`).
@@ -11,12 +51,8 @@ and the deployment boundary. The adapter follows the
 for total-asset share accounting without locked profit. Harvests and fees remain
 in the share value; the calculation does not add or subtract them again.
 
-The later complete-suite attempt passed all 69 local tests, but all 19 mainnet
-cases failed during setup because the configured RPC reset connections.
-An independent curl check also returned `Connection reset by peer`. The new
-ETH period report and its offline replay remain pending until RPC access returns.
-Ruff formatting, Ruff checks, ty checks, and wheel/source builds pass for the
-addition. The report correction also passes these checks. Reporting tests cover
+The supplied archive node recovered after an earlier connection outage. The full
+mainnet test set now passes, including the ETH/stETH vault. Reporting tests cover
 equal initial USD values, a winner across starting assets, USD gaps against both
 benchmarks, holding and cash winners, date boundaries, incomplete results, and
 missing plain-asset vaults. The plain vault matches the starting asset; the

@@ -176,6 +176,7 @@ class Fork:
             "--hardfork",
             historical_hardfork(self.block),
             "--no-storage-caching",
+            "--no-mining",
             "--retries",
             "0",
         ]
@@ -292,6 +293,9 @@ class Fork:
             "gasPrice": hex(gas_price),
         }
         tx_hash = self.rpc("eth_sendTransaction", [tx])
+        # Finish this local block before requesting its receipt. Anvil can ask
+        # the archive for a not-yet-mined local hash when automining races a read.
+        self.rpc("evm_mine", [])
         try:
             receipt = Web3(self.provider).eth.wait_for_transaction_receipt(
                 tx_hash, timeout=60, poll_latency=0.05
@@ -367,7 +371,30 @@ class Fork:
         value: int,
         *,
         shift: int = 0,
+        mask: int = 2**256 - 1,
     ) -> None:
+        """Write a proven storage word; mask selects the getter's visible bits."""
+        slot = self.mapping_slot(address, getter, keys, shift=shift)
+        self.rpc(
+            "anvil_setStorageAt",
+            [address, hex(slot), "0x" + (value << shift).to_bytes(32, "big").hex()],
+        )
+        if self.call(address, getter, ("address",) * len(keys), keys) != value & mask:
+            raise Unavailable(f"cannot seed {address} {getter} exactly")
+
+    def mapping_word(self, address: str, getter: str, keys: tuple[str, ...]) -> int:
+        """Read the full word, including packed fields hidden by a getter."""
+        slot = self.mapping_slot(address, getter, keys)
+        return int(self.rpc("eth_getStorageAt", [address, hex(slot), "latest"]), 16)
+
+    def mapping_slot(
+        self,
+        address: str,
+        getter: str,
+        keys: tuple[str, ...],
+        *,
+        shift: int = 0,
+    ) -> int:
         """Prove a storage slot with its getter; reject unsupported layouts."""
         cache_key = (address.lower(), getter, keys, shift)
 
@@ -381,10 +408,7 @@ class Fork:
             )
 
         if cache_key in self.slots:
-            write(self.slots[cache_key], value << shift)
-            if read() != value:
-                raise Unavailable(f"storage layout changed for {address} {getter}")
-            return
+            return self.slots[cache_key]
         probe = 2**71 + 19
         trace = self.rpc(
             "debug_traceCall",
@@ -416,10 +440,7 @@ class Fork:
                 self.rpc("anvil_setStorageAt", [address, hex(slot), old])
             if matches:
                 self.slots[cache_key] = slot
-                write(slot, value << shift)
-                if read() != value:
-                    raise Unavailable(f"cannot seed {getter} exactly")
-                return
+                return slot
         raise Unavailable(f"unsupported storage layout: {address} {getter}")
 
     def wrap(self, amount: int) -> None:

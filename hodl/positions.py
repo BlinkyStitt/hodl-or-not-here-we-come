@@ -256,6 +256,24 @@ class Integrals:
     killed: bool | None
 
 
+@dataclass(frozen=True)
+class RewardState:
+    token: Token
+    integral: int
+    # V3/factory gauges pack accrued and previously claimed rewards in one word.
+    # V2 gauges transfer rewards at each checkpoint and have no claim_data field.
+    claim_data: int | None
+
+
+@dataclass(frozen=True)
+class GaugeState:
+    integral: int
+    fraction: int
+    minted: int
+    checkpoint: int
+    extra: tuple[RewardState, ...]
+
+
 def reward_tokens(fork: Fork, verified: VerifiedStrategy) -> tuple[Token, ...]:
     if not verified.gauge or not verified.strategy.pool:
         return ()
@@ -323,14 +341,48 @@ def checkpoint_integrals(fork: Fork, verified: VerifiedStrategy) -> Integrals:
     return Integrals(integral, tuple(extra), killed)
 
 
+def gauge_state(fork: Fork, verified: VerifiedStrategy) -> GaugeState:
+    """Capture account state after a real simulated deposit or compound."""
+    gauge = verified.gauge
+    pool = verified.strategy.pool
+    if not gauge or not pool:
+        raise ValueError("not a gauge position")
+    extra = tuple(
+        RewardState(
+            token,
+            fork.call(
+                gauge,
+                "reward_integral_for(address,address)",
+                ("address", "address"),
+                (token.address, ACCOUNT),
+            ),
+            fork.mapping_word(
+                gauge, "claimed_reward(address,address)", (ACCOUNT, token.address)
+            )
+            if pool.gauge_version in ("v3", "factory")
+            else None,
+        )
+        for token in reward_tokens(fork, verified)
+    )
+    return GaugeState(
+        fork.call(gauge, "integrate_inv_supply_of(address)", ("address",), (ACCOUNT,)),
+        fork.call(gauge, "integrate_fraction(address)", ("address",), (ACCOUNT,)),
+        fork.call(
+            MINTER, "minted(address,address)", ("address", "address"), (ACCOUNT, gauge)
+        ),
+        fork.call(gauge, "integrate_checkpoint_of(address)", ("address",), (ACCOUNT,)),
+        extra,
+    )
+
+
 def seed_gauge(
-    fork: Fork, verified: VerifiedStrategy, shares: int, baseline: Integrals
+    fork: Fork, verified: VerifiedStrategy, shares: int, state: GaugeState
 ) -> None:
     if not verified.gauge:
         raise ValueError("missing gauge")
     gauge = verified.gauge
     current_tokens = reward_tokens(fork, verified)
-    removed = {t.address.lower() for t, _ in baseline.extra} - {
+    removed = {reward.token.address for reward in state.extra} - {
         t.address.lower() for t in current_tokens
     }
     if removed:
@@ -340,15 +392,28 @@ def seed_gauge(
     fork.set_mapping(gauge, "balanceOf(address)", (ACCOUNT,), shares)
     fork.set_mapping(gauge, "working_balances(address)", (ACCOUNT,), shares * 40 // 100)
     fork.set_mapping(
-        gauge, "integrate_inv_supply_of(address)", (ACCOUNT,), baseline.crv
+        gauge, "integrate_inv_supply_of(address)", (ACCOUNT,), state.integral
     )
-    for token, integral in baseline.extra:
+    fork.set_mapping(gauge, "integrate_fraction(address)", (ACCOUNT,), state.fraction)
+    fork.set_mapping(MINTER, "minted(address,address)", (ACCOUNT, gauge), state.minted)
+    fork.set_mapping(
+        gauge, "integrate_checkpoint_of(address)", (ACCOUNT,), state.checkpoint
+    )
+    for reward in state.extra:
         fork.set_mapping(
             gauge,
             "reward_integral_for(address,address)",
-            (token.address, ACCOUNT),
-            integral,
+            (reward.token.address, ACCOUNT),
+            reward.integral,
         )
+        if reward.claim_data is not None:
+            fork.set_mapping(
+                gauge,
+                "claimed_reward(address,address)",
+                (ACCOUNT, reward.token.address),
+                reward.claim_data,
+                mask=2**128 - 1,
+            )
 
 
 def claim(fork: Fork, verified: VerifiedStrategy) -> dict[Token, int]:
