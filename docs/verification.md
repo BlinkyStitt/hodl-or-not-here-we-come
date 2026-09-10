@@ -58,10 +58,63 @@ benchmarks, holding and cash winners, date boundaries, incomplete results, and
 missing plain-asset vaults. The plain vault matches the starting asset; the
 overall winner uses the highest complete USD proceeds across the comparison.
 
-The reports below record the original release at commit `567e7c4`, before the
+The original samples at the end of this document record commit `567e7c4`, before the
 ETH/stETH vault and benchmark columns were added. Their manifests
 retain the calculation fingerprint. Use that commit for byte-exact replay of
 those files, or regenerate them with the current code and catalog.
+
+## Reports with the review fixes
+
+The [updated four-asset report](samples/2022-q1-reviewed.txt) uses the corrected
+swap and claim accounting, all fifteen strategies, and $10,000 per starting
+asset from 2022-01-01 through 2022-04-01. All eleven deployed strategies complete
+their forty-four positions. The 195 monthly rows contain 147 complete outcomes
+and 48 unavailable entries for contracts that had not deployed. The report
+records 44 entries, 44 exits, and 24 compound attempts that retain rewards because
+gas costs exceed proceeds. It has no missing-data or blocked-exit rows.
+
+The overall USD winner is Yearn USDC V2 funded with USDC: **$10,062.32**, or
+**+0.6232%** after costs. Its estimated gas is $61.56; it beats holding USDC by
+only $0.38. The ETH-funded pool and vault comparison is:
+
+| Position | Ending ETH | Ending USD | Gas USD | USD gap against plain WETH vault |
+|---|---:|---:|---:|---:|
+| Hold ETH | 2.70720955 | 8888.59 | 0.00 | +36.33 |
+| Curve ETH/stETH LP | 2.71108215 | 8901.30 | 62.30 | +49.05 |
+| Curve ETH/stETH gauge | 2.61043409 | 8570.85 | 482.11 | -281.41 |
+| Yearn WETH V2 | 2.69614410 | 8852.26 | 69.40 | 0.00 |
+| Yearn ETH/stETH V2 | 2.66605253 | 8753.46 | 251.39 | -98.80 |
+
+These figures round for readability. The [CSV](samples/2022-q1-reviewed.csv)
+retains full precision and gaps against the overall winner. The ETH/stETH Yearn
+vault includes harvests and fees through share value. In this period, it trails
+the plain WETH vault after costs. Its estimated gas alone is $181.99 higher.
+
+```bash
+uv run hodl compare --start 2022-01-01 --end 2022-04-01 \
+  --assets USD,BTC,ETH,CRV --usd-value 10000 --cache .hodl/review-fixes.sqlite \
+  --csv docs/samples/2022-q1-reviewed.csv
+```
+
+Status 1 is expected for the undeployed contracts. With RPC and HTTP request
+functions disabled, the offline rerun returns the same status and produces
+byte-identical text, CSV, and JSON files.
+
+The [updated $1,000,000 CRV gauge example](samples/2024-crv-gauge-compound-reviewed.txt)
+also completes and replays offline with identical text, CSV, and JSON files.
+It covers 2024-01-13 through 2024-03-13 and executes one monthly compound. That
+compound uses 818,332 gas, estimated at $120.45. Total estimated gas is $258.80.
+The position ends at $1,422,021.23, versus $1,523,202.62 for holding CRV.
+The cached compound records cumulative CRV entitlement and minted counters of
+`13812903520462069203270`. Both the hypothetical exit and the final exit restore
+that exact saved account state. The run returns status 0.
+
+```bash
+uv run hodl compare --start 2024-01-13 --end 2024-03-13 --assets CRV \
+  --usd-value 1000000 --strategy curve-crv-cvxcrv-v2-gauge \
+  --cache .hodl/crv-reviewed.sqlite \
+  --csv docs/samples/2024-crv-gauge-compound-reviewed.csv
+```
 
 ## Original release validation
 
@@ -112,7 +165,7 @@ Pydantic pins pydantic-core
 2.46.5. eth-abi constrains parsimonious to 0.10.x. No dependency override bypasses
 these upstream requirements.
 
-## Sample reports
+## Original sample reports
 
 The [Yearn V3 sample](samples/yearn-v3-latest.txt) starts on 2026-08-01 with
 $10,000 of USDC. Its end is 2026-09-10T09:07:35Z, first selected by a command

@@ -1,0 +1,2281 @@
+{
+  "engine": {
+    "source_sha256": "8dba3d628b79dd9947b7d78124dbb2d1ec26bff371d68bf283d99d503adc5955",
+    "decimal_precision": 100,
+    "decimal_rounding": "ROUND_HALF_EVEN",
+    "anvil": "anvil Version: 1.7.1\nCommit SHA: 4072e48705af9d93e3c0f6e29e93b5e9a40caed8\nBuild Timestamp: 2026-05-08T07:54:31.470926000Z (1778226871)\nBuild Profile: dist",
+    "web3": "8.0.0",
+    "eth-abi": "6.0.0"
+  },
+  "scenario": {
+    "start": 1640995200,
+    "end": 1648771200,
+    "assets": [
+      "USD",
+      "BTC",
+      "ETH",
+      "CRV"
+    ],
+    "usd_value": "10000"
+  },
+  "start_block": {
+    "number": 13916165,
+    "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+    "timestamp": 1640995189
+  },
+  "end_block": {
+    "number": 14497033,
+    "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+    "timestamp": 1648771196
+  },
+  "assumptions": [
+    "Ethereum mainnet; timestamps use UTC and the last block at or before each time.",
+    "Assets are already held at entry. USD=USDC, BTC=WBTC, ETH=native ETH, CRV=CRV.",
+    "Each starting asset has the same initial USD value; token amounts round down.",
+    "Historical prices must be at or before the block timestamp and at most 24 hours old.",
+    "One entry; monthly observations are hypothetical exits. Only scheduled compounds change shares.",
+    "Fixed vault and gauge; no migration. No veCRV boost. Final exit sells remaining rewards.",
+    "The added position does not change later market activity, supplies, or reward integrals.",
+    "Routes cover the catalog Curve pools and Uniswap V3, with at most two swaps.",
+    "Swap execution includes fees and price impact; these are not exchange-wide best-route claims.",
+    "Gas units come from local fork receipts, including approvals, wraps, swaps, and protocol actions.",
+    "Gas funding debits equivalent asset value at historical prices; it is an estimate.",
+    "Gas price uses the block's median priority fee plus base fee, or pre-London median gasPrice.",
+    "An even-count median rounds up to the nearest wei. No current gas prices are substituted.",
+    "Yearn V2 withdrawals use maxLoss=1 basis point. V3 uses the deployed redeem defaults.",
+    "Yearn share value already includes reported fees and rewards. No extra yield is added.",
+    "Unavailable or incomplete rows are not complete net outcomes; blank values do not mean zero.",
+    "Best means the highest complete ending USD value across all selected positions, all asset holding benchmarks, and cash at that observation.",
+    "The single-asset vault benchmark uses a selected vault whose underlying is the starting asset (WETH for ETH), without an LP.",
+    "Both benchmark gaps use USD proceeds after costs from equal initial USD values.",
+    "Benchmark winners are historical comparisons, not assumed migrations. Vault fees and harvests remain in share value."
+  ],
+  "assets": {
+    "USD": {
+      "symbol": "USDC",
+      "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+      "decimals": 6
+    },
+    "BTC": {
+      "symbol": "WBTC",
+      "address": "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599",
+      "decimals": 8
+    },
+    "ETH": {
+      "symbol": "ETH",
+      "address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+      "decimals": 18
+    },
+    "CRV": {
+      "symbol": "CRV",
+      "address": "0xd533a949740bb3306d119cc777fa900ba034cd52",
+      "decimals": 18
+    }
+  },
+  "contracts": [
+    {
+      "strategy": "curve-3pool-lp",
+      "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+      "version": "stable-v1",
+      "deployment": {
+        "number": 10809473,
+        "hash": "0x2d76f2a7c4f083b9f889611734104cfb1efa0cfef8e52b753d9c719870a49b98",
+        "timestamp": 1599414978
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x954a1e212c557c85043985931498ffa3e2fcbe7dfe9cd61513f36eb47d6f4dfc",
+      "lp_deployment": {
+        "number": 10809467,
+        "hash": "0x1a8b5c22d4632b6135c4e9043e1eece41959f242ad7c15e46aaaeab8fa546ec6",
+        "timestamp": 1599414946
+      },
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "curve-3pool-gauge",
+      "address": "0xbEbc44782C7dB0a1A60Cb6fe97d0b483032FF1C7",
+      "version": "stable-v1",
+      "deployment": {
+        "number": 10809473,
+        "hash": "0x2d76f2a7c4f083b9f889611734104cfb1efa0cfef8e52b753d9c719870a49b98",
+        "timestamp": 1599414978
+      },
+      "gauge": "0xbFcF63294aD7105dEa65aA58F8AE5BE2D9d0952A",
+      "gauge_deployment": {
+        "number": 10809479,
+        "hash": "0xc09d046e6a96793da53f26d20c09e278b530c3f57839c464b16eecad291e2650",
+        "timestamp": 1599415109
+      },
+      "code_hash": "0x954a1e212c557c85043985931498ffa3e2fcbe7dfe9cd61513f36eb47d6f4dfc",
+      "lp_deployment": {
+        "number": 10809467,
+        "hash": "0x1a8b5c22d4632b6135c4e9043e1eece41959f242ad7c15e46aaaeab8fa546ec6",
+        "timestamp": 1599414946
+      },
+      "gauge_code_hash": "0xe6db011add14173e6dcb0ae9b1b9676f9512e0228cab345c37dc66c722cbd091"
+    },
+    {
+      "strategy": "curve-tricrypto2-lp",
+      "address": "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+      "version": "crypto-v2",
+      "deployment": {
+        "number": 12821148,
+        "hash": "0xf9a30ed16a55df2830a4c6c99b6e5b25c3c72f6a1c74d40eeb856169f02852e2",
+        "timestamp": 1626211083
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x9cb858c1d8e8ab8ba7dc273f146d428965b0ca686d05fb02cb4ffc62149ec928",
+      "lp_deployment": {
+        "number": 12821118,
+        "hash": "0xc4f3654440dee6fc009caa136fae11f586a5dd84890641975365de51c5375d3f",
+        "timestamp": 1626210526
+      },
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "curve-tricrypto2-gauge",
+      "address": "0xD51a44d3FaE010294C616388b506AcdA1bfAAE46",
+      "version": "crypto-v2",
+      "deployment": {
+        "number": 12821148,
+        "hash": "0xf9a30ed16a55df2830a4c6c99b6e5b25c3c72f6a1c74d40eeb856169f02852e2",
+        "timestamp": 1626211083
+      },
+      "gauge": "0xDeFd8FdD20e0f34115C7018CCfb655796F6B2168",
+      "gauge_deployment": {
+        "number": 12825536,
+        "hash": "0x0a65b5f18f7168a85a4aa308088b2d4b41fa7f3a5e02c7e15e2e0251bef369a5",
+        "timestamp": 1626271349
+      },
+      "code_hash": "0x9cb858c1d8e8ab8ba7dc273f146d428965b0ca686d05fb02cb4ffc62149ec928",
+      "lp_deployment": {
+        "number": 12821118,
+        "hash": "0xc4f3654440dee6fc009caa136fae11f586a5dd84890641975365de51c5375d3f",
+        "timestamp": 1626210526
+      },
+      "gauge_code_hash": "0xaf6fb0702457882b2f17244bb5ad80f7ae475a78b95888133aba4ac079677b97"
+    },
+    {
+      "strategy": "curve-eth-steth-lp",
+      "address": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+      "version": "stable-eth",
+      "deployment": {
+        "number": 11592551,
+        "hash": "0x8483d937d9c3852dae228398d424eb774bdac4d7f336aaedfdfa9626b865c743",
+        "timestamp": 1609823915
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0xe2c45ce8268580c40b4c12c574f8a210375ab92998c1555451fef63630e96b35",
+      "lp_deployment": {
+        "number": 11591275,
+        "hash": "0x74e2ea3eee4240693e59d9c2a599818cbb9e3d4afa5520cd0d1e44d4cd9f47a0",
+        "timestamp": 1609806378
+      },
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "curve-eth-steth-gauge",
+      "address": "0xDC24316b9AE028F1497c275EB9192a3Ea0f67022",
+      "version": "stable-eth",
+      "deployment": {
+        "number": 11592551,
+        "hash": "0x8483d937d9c3852dae228398d424eb774bdac4d7f336aaedfdfa9626b865c743",
+        "timestamp": 1609823915
+      },
+      "gauge": "0x182B723a58739a9c974cFDB385ceaDb237453c28",
+      "gauge_deployment": {
+        "number": 11592551,
+        "hash": "0x8483d937d9c3852dae228398d424eb774bdac4d7f336aaedfdfa9626b865c743",
+        "timestamp": 1609823915
+      },
+      "code_hash": "0xe2c45ce8268580c40b4c12c574f8a210375ab92998c1555451fef63630e96b35",
+      "lp_deployment": {
+        "number": 11591275,
+        "hash": "0x74e2ea3eee4240693e59d9c2a599818cbb9e3d4afa5520cd0d1e44d4cd9f47a0",
+        "timestamp": 1609806378
+      },
+      "gauge_code_hash": "0xd9466f5e1572302fb78af6cf63a500c391f061634e85926c3301dd43e96ad301"
+    },
+    {
+      "strategy": "curve-crv-cvxcrv-v2-lp",
+      "address": "0x971add32Ea87f10bD192671630be3BE8A11b8623",
+      "status": "unavailable",
+      "note": "no contract at 0x971add32Ea87f10bD192671630be3BE8A11b8623 by block 13916165"
+    },
+    {
+      "strategy": "curve-crv-cvxcrv-v2-gauge",
+      "address": "0x971add32Ea87f10bD192671630be3BE8A11b8623",
+      "status": "unavailable",
+      "note": "no contract at 0x971add32Ea87f10bD192671630be3BE8A11b8623 by block 13916165"
+    },
+    {
+      "strategy": "yearn-usdc-v2",
+      "address": "0xa354F35829Ae975e850e23e9615b11Da1B3dC4DE",
+      "version": "0.4.3",
+      "deployment": {
+        "number": 13513457,
+        "hash": "0x3ca995d5f626141b17f566d8ee63c0dbb01bf07bb341a136c6307208bf58f535",
+        "timestamp": 1635529757
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x0ef8ede39c353d0cb0a94eac6e3b64c267e0af35dc20845d5244283560887c89",
+      "lp_deployment": null,
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "yearn-wbtc-v2",
+      "address": "0xA696a63cc78DfFa1a63E9E50587C197387FF6C7E",
+      "version": "0.3.5",
+      "deployment": {
+        "number": 12185982,
+        "hash": "0x1180eeb232f5feda49c4469fbb760e7a40fec561060761582dc4a7d687906692",
+        "timestamp": 1617709768
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x1615c3a09d5ea681932401854722865b7e045e2cbc43daaa6d7deaa31bda503f",
+      "lp_deployment": null,
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "yearn-weth-v2",
+      "address": "0xa258C4606Ca8206D8aA700cE2143D7db854D168c",
+      "version": "0.4.2",
+      "deployment": {
+        "number": 12588794,
+        "hash": "0x8ad3f52b73f9b1ec3c4694d0bd2cfe016b104863880b16c490fa9d434d00f7fe",
+        "timestamp": 1623088086
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x9fc79280af824e09a7f76ae1bfe123a592feb0c7cb04c86e5de3474fbf65ad3e",
+      "lp_deployment": null,
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "yearn-eth-steth-v2",
+      "address": "0xdCD90C7f6324cfa40d7169ef80b12031770B4325",
+      "version": "0.3.0",
+      "deployment": {
+        "number": 11654862,
+        "hash": "0x0d39d66f9dcc21aafaa722e18cf6477394013d64ea48b22d4b94e61888c48c2b",
+        "timestamp": 1610649529
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x7f81ec3544adb66ed0209190eeb71780737818ac4ddc60668465477e100a2123",
+      "lp_deployment": {
+        "number": 11591275,
+        "hash": "0x74e2ea3eee4240693e59d9c2a599818cbb9e3d4afa5520cd0d1e44d4cd9f47a0",
+        "timestamp": 1609806378
+      },
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "yearn-tricrypto2-v2",
+      "address": "0xE537B5cc158EB71037D4125BDD7538421981E6AA",
+      "version": "0.4.3",
+      "deployment": {
+        "number": 12826819,
+        "hash": "0x8e5d6663205242a98f2b00b33d0cd8fd3e222f6e15fe6b8813734d9bcc607854",
+        "timestamp": 1626288699
+      },
+      "gauge": null,
+      "gauge_deployment": null,
+      "code_hash": "0x0ef8ede39c353d0cb0a94eac6e3b64c267e0af35dc20845d5244283560887c89",
+      "lp_deployment": {
+        "number": 12821118,
+        "hash": "0xc4f3654440dee6fc009caa136fae11f586a5dd84890641975365de51c5375d3f",
+        "timestamp": 1626210526
+      },
+      "gauge_code_hash": null
+    },
+    {
+      "strategy": "yearn-crv-cvxcrv-v2",
+      "address": "0xa8eF50905352aCD611F53640b001E48F2eA31d63",
+      "status": "unavailable",
+      "note": "no contract at 0xa8eF50905352aCD611F53640b001E48F2eA31d63 by block 13916165"
+    },
+    {
+      "strategy": "yearn-usd-v3",
+      "address": "0x696d02Db93291651ED510704c9b286841d506987",
+      "status": "unavailable",
+      "note": "no contract at 0x696d02Db93291651ED510704c9b286841d506987 by block 13916165"
+    }
+  ],
+  "actions": {
+    "curve-3pool-lp/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 251938,
+        "gas_wei": 18563254970823074,
+        "gas_usd": "68.569701142231039297146442372674",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 151433,
+        "gas_wei": 7708656813091562,
+        "gas_usd": "25.3098548268334255333437464485434",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "curve-3pool-lp/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 429494,
+        "gas_wei": 31645907447223862,
+        "gas_usd": "116.894931381456461478175638928662",
+        "route": [
+          "approval",
+          "WBTC -> USDC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 352375,
+        "gas_wei": 17937556176745750,
+        "gas_usd": "58.894429183899337147860787640775",
+        "route": [
+          "approval",
+          "USDC -> WBTC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-lp/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 465745,
+        "gas_wei": 34316947766458385,
+        "gas_usd": "126.761328019149137476083281612385",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 372142,
+        "gas_wei": 18943790083650988,
+        "gas_usd": "62.1981998307333582827363156699916",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-lp/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 592711,
+        "gas_wei": 43672036044628103,
+        "gas_usd": "161.317531034273914744305999909303",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 508832,
+        "gas_wei": 25901958381059648,
+        "gas_usd": "85.0439735807076765367018099945536",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-gauge/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 692314,
+        "gas_wei": 51010968182133722,
+        "gas_usd": "188.426375046966077923793322582522",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1043489,
+        "gas_wei": 53118531556768346,
+        "gas_usd": "174.4042256535734243947048043546922",
+        "route": [
+          "approval",
+          "CRV -> USDC (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-gauge/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 869870,
+        "gas_wei": 64093620658534510,
+        "gas_usd": "236.75160528619150010482251913851",
+        "route": [
+          "approval",
+          "WBTC -> USDC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1384329,
+        "gas_wei": 70468901609360106,
+        "gas_usd": "231.3707449669192919320637851549242",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "USDC -> WBTC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-gauge/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 906097,
+        "gas_wei": 66762892613650481,
+        "gas_usd": "246.611469869063491867151838922881",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1291053,
+        "gas_wei": 65720711499556242,
+        "gas_usd": "215.7809988823293108840216061468194",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH",
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-3pool-gauge/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1033087,
+        "gas_wei": 76119749255938751,
+        "gas_usd": "281.174204939008953370952880119151",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1222143,
+        "gas_wei": 62212866175286502,
+        "gas_usd": "204.2636803578525366439106820565014",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-lp/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 582744,
+        "gas_wei": 42937649162561112,
+        "gas_usd": "158.604823101033924077258319165912",
+        "route": [
+          "approval",
+          "USDC -> USDT (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 424091,
+        "gas_wei": 21588240188867774,
+        "gas_usd": "70.8807303782307308701622682975918",
+        "route": [
+          "approval",
+          "USDT -> USDC (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-lp/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 372677,
+        "gas_wei": 27459526442066821,
+        "gas_usd": "101.431108100339119275943465075221",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 228793,
+        "gas_wei": 11646647152454602,
+        "gas_usd": "38.2394697020840895184689980466714",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-lp/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 407921,
+        "gas_wei": 30056369150160433,
+        "gas_usd": "111.023430604513919222710642773633",
+        "route": [
+          "wrap ETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 256061,
+        "gas_wei": 13034717480450354,
+        "gas_usd": "42.7969249556820097039187829558978",
+        "route": [
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-lp/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 726224,
+        "gas_wei": 53509519317971152,
+        "gas_usd": "197.655624170691179109665385791952",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDT (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 616109,
+        "gas_wei": 31362865692795026,
+        "gas_usd": "102.9737860803491641314831131963682",
+        "route": [
+          "approval",
+          "USDT -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-gauge/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1023057,
+        "gas_wei": 75380720418060561,
+        "gas_usd": "278.444350361864666585512101764961",
+        "route": [
+          "approval",
+          "USDC -> USDT (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1161561,
+        "gas_wei": 59128955488377354,
+        "gas_usd": "194.1382676332864078235014525797978",
+        "route": [
+          "approval",
+          "CRV -> USDC (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "USDT -> USDC (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-gauge/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 812768,
+        "gas_wei": 59886240329469664,
+        "gas_usd": "221.210213854078532605097760855264",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1106107,
+        "gas_wei": 56306084285183998,
+        "gas_usd": "184.8699265876277945785281368853486",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-gauge/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 848076,
+        "gas_wei": 62487798675212748,
+        "gas_usd": "230.819955171108490513407132951948",
+        "route": [
+          "wrap ETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1020320,
+        "gas_wei": 51939119739644480,
+        "gas_usd": "170.531859481847950844144218079136",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-tricrypto2-gauge/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1166453,
+        "gas_wei": 85946401299055669,
+        "gas_usd": "317.472289239649526793395038243269",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDT (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1174460,
+        "gas_wei": 59785575671772440,
+        "gas_usd": "196.294150547917461530121548499708",
+        "route": [
+          "approval",
+          "USDT -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-lp/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 375635,
+        "gas_wei": 27677477319678355,
+        "gas_usd": "102.236183856988451310971762420355",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 344719,
+        "gas_wei": 17547829521650566,
+        "gas_usd": "57.6148385493993489954549070017462",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-lp/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 358343,
+        "gas_wei": 26403370972261639,
+        "gas_usd": "97.529838358685459576790113437239",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 333539,
+        "gas_wei": 16978714578604046,
+        "gas_usd": "55.7462618391446641020513352221822",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-lp/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 150367,
+        "gas_wei": 11079316975596191,
+        "gas_usd": "40.925228634242768800236641952591",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 127906,
+        "gas_wei": 6511021100653684,
+        "gas_usd": "21.3776540878207268314559259424788",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-lp/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 352799,
+        "gas_wei": 25994878860876127,
+        "gas_usd": "96.020933695107401158197523686927",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 340064,
+        "gas_wei": 17310867977832896,
+        "gas_usd": "56.8368220390026085501245289486272",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-gauge/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1036226,
+        "gas_wei": 76351036546277698,
+        "gas_usd": "282.028543275764279015967695996898",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1878214,
+        "gas_wei": 95609986908691996,
+        "gas_usd": "313.9165417955539116618153994974972",
+        "route": [
+          "approval",
+          "CRV -> USDC (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "LDO -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-gauge/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1018934,
+        "gas_wei": 75076930198860982,
+        "gas_usd": "277.322197777461287281786047013782",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1995648,
+        "gas_wei": 101587933619043072,
+        "gas_usd": "333.5439512223918960779115576693504",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "LDO -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "wrap ETH",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-gauge/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 810958,
+        "gas_wei": 59752876202195534,
+        "gas_usd": "220.717588053018596505232575529134",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1563979,
+        "gas_wei": 79613937344450206,
+        "gas_usd": "261.3966667913606283452973871404942",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH",
+          "approval",
+          "LDO -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-eth-steth-gauge/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 1013390,
+        "gas_wei": 74668438087475470,
+        "gas_usd": "275.81329311388322886319345726347",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1643673600,
+        "block": {
+          "number": 14116761,
+          "hash": "0x4a5a96b90503c3033b494fe07306a6de18ce0ca3833cac7ad336993a64aa9ce0",
+          "timestamp": 1643673600
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1646092800,
+        "block": {
+          "number": 14297758,
+          "hash": "0x3d75edc45b9dcab8bf1196fabcecdcf22c9289d02eedfe1416731fd751eca9b3",
+          "timestamp": 1646092798
+        },
+        "kind": "skipped-compound",
+        "gas_units": 0,
+        "gas_wei": 0,
+        "gas_usd": "0",
+        "route": [],
+        "note": "compounding skipped; rewards retained: proceeds cannot cover the deposit and gas"
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1681429,
+        "gas_wei": 85592698530569506,
+        "gas_usd": "281.0267503888036284106148742165042",
+        "route": [
+          "approval",
+          "LDO -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "wrap ETH",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "curve-crv-cvxcrv-v2-lp/USD": [],
+    "curve-crv-cvxcrv-v2-lp/BTC": [],
+    "curve-crv-cvxcrv-v2-lp/ETH": [],
+    "curve-crv-cvxcrv-v2-lp/CRV": [],
+    "curve-crv-cvxcrv-v2-gauge/USD": [],
+    "curve-crv-cvxcrv-v2-gauge/BTC": [],
+    "curve-crv-cvxcrv-v2-gauge/ETH": [],
+    "curve-crv-cvxcrv-v2-gauge/CRV": [],
+    "yearn-usdc-v2/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 165925,
+        "gas_wei": 12225659015447525,
+        "gas_usd": "45.159633171751324513884461457525",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 98125,
+        "gas_wei": 4995027172311250,
+        "gas_usd": "16.400186913572536240181170024125",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "yearn-usdc-v2/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 346854,
+        "gas_wei": 25556840332343142,
+        "gas_usd": "94.402889282233743636817122159942",
+        "route": [
+          "approval",
+          "WBTC -> USDC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 299067,
+        "gas_wei": 15223926535965438,
+        "gas_usd": "49.9847612706384478546982112163566",
+        "route": [
+          "approval",
+          "USDC -> WBTC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-usdc-v2/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 383105,
+        "gas_wei": 28227880651577665,
+        "gas_usd": "104.269285919926419634724764843665",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 318846,
+        "gas_wei": 16230771299696844,
+        "gas_usd": "53.2905375454262307264897359236908",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-usdc-v2/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 510071,
+        "gas_wei": 37582968929747383,
+        "gas_usd": "138.825488935051196902947483140583",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 455524,
+        "gas_wei": 23188328740279336,
+        "gas_usd": "76.1343056674467872435392335701352",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-wbtc-v2/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 345960,
+        "gas_wei": 25490968768927080,
+        "gas_usd": "94.15957024016325586152459415908",
+        "route": [
+          "approval",
+          "USDC -> WBTC (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 423048,
+        "gas_wei": 21535146549726672,
+        "gas_usd": "70.7064078819162732365468903578704",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-wbtc-v2/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 140244,
+        "gas_wei": 10333435726758612,
+        "gas_usd": "38.170062344668330601929862363412",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 87256,
+        "gas_wei": 4441743602009584,
+        "gas_usd": "14.5835893944528430285171788191088",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "yearn-wbtc-v2/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 354563,
+        "gas_wei": 26124853623589699,
+        "gas_usd": "96.501039724427692473204256789299",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 281701,
+        "gas_wei": 14339914899029314,
+        "gas_usd": "47.0822833502195875810983518671698",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-wbtc-v2/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 481529,
+        "gas_wei": 35479941901759417,
+        "gas_usd": "131.057242739552469741426975086217",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 418379,
+        "gas_wei": 21297472339611806,
+        "gas_usd": "69.9260514722401440981478495136142",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-weth-v2/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 334512,
+        "gas_wei": 24647459084377776,
+        "gas_usd": "91.043780090696875490664571168176",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 255761,
+        "gas_wei": 13019446059796154,
+        "gas_usd": "42.7467842568379662810188660029578",
+        "route": [
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-weth-v2/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 317241,
+        "gas_wei": 23374900055564793,
+        "gas_usd": "86.343150140361982462613954721993",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 244591,
+        "gas_wei": 12450840164104774,
+        "gas_usd": "40.8798789032114161683786247884918",
+        "route": [
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-weth-v2/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 184731,
+        "gas_wei": 13611319666009563,
+        "gas_usd": "50.278042461659146775798646674763",
+        "route": [
+          "wrap ETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 114424,
+        "gas_wei": 5824723456453936,
+        "gas_usd": "19.1243310817694154063336580773552",
+        "route": [
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-weth-v2/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 311697,
+        "gas_wei": 22966407944179281,
+        "gas_usd": "84.834245476783924044021364971681",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 251116,
+        "gas_wei": 12782993563333624,
+        "gas_usd": "41.9704391030693606164518185149368",
+        "route": [
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-eth-steth-v2/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 500573,
+        "gas_wei": 36883138829830429,
+        "gas_usd": "136.240428239765410672826195722029",
+        "route": [
+          "approval",
+          "USDC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1272613,
+        "gas_wei": 64782028176678082,
+        "gas_usd": "212.6990172600487751564400441061074",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> USDC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-eth-steth-v2/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 483281,
+        "gas_wei": 35609032482413713,
+        "gas_usd": "131.534082741462418938644546738913",
+        "route": [
+          "approval",
+          "WBTC -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1261433,
+        "gas_wei": 64212913233631562,
+        "gas_usd": "210.8304405497940902630364723265434",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> WBTC (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-eth-steth-v2/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 275305,
+        "gas_wei": 20284978485748265,
+        "gas_usd": "74.929473017019728162091075254265",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1055800,
+        "gas_wei": 53745219755681200,
+        "gas_usd": "176.46183279847015299244106304684",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "yearn-eth-steth-v2/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 477737,
+        "gas_wei": 35200540371028201,
+        "gas_usd": "130.025178077884360520051956988601",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "unwrap WETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 1267958,
+        "gas_wei": 64545066632860412,
+        "gas_usd": "211.9210007496520347111096660529884",
+        "route": [
+          "wrap ETH",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-tricrypto2-v2/USD": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 719963,
+        "gas_wei": 53048197328543899,
+        "gas_usd": "195.951574369345179153170399423499",
+        "route": [
+          "approval",
+          "USDC -> USDT (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 507639,
+        "gas_wei": 25841229031591446,
+        "gas_usd": "84.8445807349711971916364735783622",
+        "route": [
+          "approval",
+          "USDT -> USDC (Uniswap V3 fee=100 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-tricrypto2-v2/BTC": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 509822,
+        "gas_wei": 37564622152017406,
+        "gas_usd": "138.757718866286597958822383059806",
+        "route": [],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 312341,
+        "gas_wei": 15899635995178274,
+        "gas_usd": "52.2033200588245558399432033274418",
+        "route": [],
+        "note": ""
+      }
+    ],
+    "yearn-tricrypto2-v2/ETH": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 545040,
+        "gas_wei": 40159549132315920,
+        "gas_usd": "148.34296497773898998371304428392",
+        "route": [
+          "wrap ETH"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 339609,
+        "gas_wei": 17287706323174026,
+        "gas_usd": "56.7607753124224760253929882366682",
+        "route": [
+          "unwrap WETH"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-tricrypto2-v2/CRV": [
+      {
+        "timestamp": 1640995200,
+        "block": {
+          "number": 13916165,
+          "hash": "0x0f4b85e7d2860d9fa23bb4d1b7a829da824434f17c863df7e3b5227d040fa2b0",
+          "timestamp": 1640995189
+        },
+        "kind": "entry",
+        "gas_units": 863359,
+        "gas_wei": 63613878209539007,
+        "gas_usd": "234.979513247130039361053335901807",
+        "route": [
+          "approval",
+          "CRV -> WETH (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> USDT (Uniswap V3 fee=3000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      },
+      {
+        "timestamp": 1648771200,
+        "block": {
+          "number": 14497033,
+          "hash": "0xba079017e34778e071d26698d4cd9a64689487ac91218836ef5d608ec392b3ee",
+          "timestamp": 1648771196
+        },
+        "kind": "exit",
+        "gas_units": 699667,
+        "gas_wei": 35616363582873838,
+        "gas_usd": "116.9393077937177652337206490422366",
+        "route": [
+          "approval",
+          "USDT -> WETH (Uniswap V3 fee=500 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)",
+          "approval",
+          "WETH -> CRV (Uniswap V3 fee=10000 router=0xE592427A0AEce92De3Edee1F18E0157C05861564)"
+        ],
+        "note": ""
+      }
+    ],
+    "yearn-crv-cvxcrv-v2/USD": [],
+    "yearn-crv-cvxcrv-v2/BTC": [],
+    "yearn-crv-cvxcrv-v2/ETH": [],
+    "yearn-crv-cvxcrv-v2/CRV": [],
+    "yearn-usd-v3/USD": [],
+    "yearn-usd-v3/BTC": [],
+    "yearn-usd-v3/ETH": [],
+    "yearn-usd-v3/CRV": []
+  }
+}
