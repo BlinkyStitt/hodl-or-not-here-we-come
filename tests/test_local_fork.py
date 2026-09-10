@@ -4,13 +4,48 @@ import shutil
 import socket
 import subprocess
 import time
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
 
 import pytest
 from web3 import HTTPProvider, Web3
 
 from hodl.cache import Cache
 from hodl.data import Archive
-from hodl.fork import ACCOUNT, Fork
+from hodl.fork import ACCOUNT, Fork, ReadBridge
+from hodl.model import Block
+
+
+def test_bridge_can_serve_a_read_while_another_read_is_waiting(tmp_path, monkeypatch):
+    cache = Cache(tmp_path / "cache.sqlite")
+    archive = Archive("http://unused.invalid", cache)
+    entered, release = Event(), Event()
+
+    def delayed(*args):
+        entered.set()
+        assert release.wait(5)
+        return "0x0"
+
+    monkeypatch.setattr(archive, "rpc", delayed)
+    bridge = ReadBridge(archive, Block(1, "hash", 1))
+
+    def request(method, params):
+        return HTTPProvider(bridge.url).make_request(method, params)
+
+    try:
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            pending = executor.submit(request, "eth_getBalance", [ACCOUNT, "latest"])
+            try:
+                assert entered.wait(2)
+                immediate = executor.submit(request, "eth_chainId", [])
+                assert immediate.result(timeout=2)["result"] == "0x1"
+            finally:
+                release.set()
+            assert pending.result(timeout=2)["result"] == "0x0"
+    finally:
+        release.set()
+        bridge.close()
+        cache.close()
 
 
 @pytest.mark.skipif(shutil.which("anvil") is None, reason="Anvil is not installed")
