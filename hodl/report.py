@@ -35,7 +35,12 @@ def assumptions() -> tuple[str, ...]:
         ),
         (
             "Fixed vault and gauge; no migration. No veCRV boost. Final exit "
-            "sells remaining rewards."
+            "sells convertible rewards."
+        ),
+        (
+            "Rewards whose supported conversions round to zero stay in the wallet "
+            "and combine with later claims. Unsold balances are disclosed in raw "
+            "units and excluded from reported starting-asset proceeds."
         ),
         (
             "The added position does not change later market activity, "
@@ -134,6 +139,7 @@ def row_record(row: Observation) -> dict:
         "accounting_usd": row.accounting_usd,
         "route": row.route,
         "note": row.note,
+        "unsold_rewards": [asdict(balance) for balance in row.residuals],
     }
 
 

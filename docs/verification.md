@@ -1,7 +1,7 @@
 # Verification status
 
-The expanded catalog passed **137 committed tests** on 2026-10-22: 83 local tests and
-54 historical mainnet fork tests. All transactions ran on local Anvil forks.
+The expanded catalog passed **150 committed tests** on 2026-10-22: 87 local tests and
+63 historical mainnet fork tests. All transactions ran on local Anvil forks.
 The private archive supplied read-only historical state. The new checks cover
 the replacement ETH/stETH vault, yCRV vaults, yCRV and sdCRV pools and gauges,
 Convex cvxCRV staking, and Stake DAO sdCRV staking.
@@ -26,6 +26,16 @@ matches the earlier four-argument mint interface. The new block-20,000,000
 regression failed before this correction and now passes. Operator and token
 identity checks still reject unknown contracts.
 
+The crvUSD reward routes pass at blocks 21,089,068 and 26,230,066 for
+CRV, cvxCRV, and sdCRV outputs. Five routing-only pools pass their identity
+checks. A historical Convex exit retains a 3Crv balance that rounds to zero
+when redeemed into a six-decimal stablecoin, while returning principal and
+other rewards. Local tests check exact residual balances, their later
+conversion without double counting, cache round trips, and report disclosure.
+Missing routes and reverted calls still fail; they do not become rounding dust.
+These checks reproduce both failures before the fixes and pass afterward.
+Ruff, ty, and wheel/source builds pass. These are local checks, not CI results.
+
 The Stake DAO adapter excludes off-chain voting distributions. These tests do
 not validate a delegated-voting total return. The Convex adapter uses the
 deployed wrapper's fixed 50/50 reward weights, not an optimized allocation.
@@ -44,8 +54,8 @@ observations between its sample times. A regression reproduces the sdCRV gap
 at 2024-11-01 and selects the prior observation while rejecting the closer
 future observation. The 24-hour freshness limit remains unchanged. The
 [official price SDK](https://github.com/DefiLlama/api-sdk) documents this search
-parameter. Live checks compared 194 historical requests: the correction
-recovered one gap and changed seven selections, all for sdCRV or cvxCRV.
+parameter. Live checks compared 200 historical requests: the correction
+recovered one gap and changed eight selections, all for sdCRV or cvxCRV.
 The staking comparisons must be regenerated with the new fingerprint.
 
 Price-response regressions cover timeouts, connection resets, and incomplete

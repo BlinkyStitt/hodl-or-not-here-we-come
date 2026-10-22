@@ -161,8 +161,14 @@ Each monthly value estimates an exit from the retained shares. It does not
 reopen the position. Entry costs occur once. Monthly gauge compounding claims
 and sells rewards, deducts costs, buys LP tokens, and stakes the new LP tokens.
 If rewards cannot cover costs, the position retains them until the next attempt.
+Rewards that round to zero on every supported conversion stay in the wallet.
+A later compound combines them with new claims. They do not block conversion of
+other rewards or withdrawal of the principal. Reports list any final unsold
+rewards in exact raw units and exclude them from reported starting-asset proceeds.
+The CSV `unsold_rewards` field and JSON actions preserve their token addresses
+and amounts. Missing route data and failed principal exits still remain unavailable.
 Missing compounding data makes later results incomplete. The final exit sells
-remaining rewards without a deposit immediately before withdrawal.
+convertible rewards without a deposit immediately before withdrawal.
 
 Conversions search direct routes and routes through WETH, USDC, USDT, WBTC, or CRV,
 with no more than three steps. They cover the catalog Curve pools, the older
