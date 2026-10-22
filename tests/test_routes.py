@@ -3,7 +3,7 @@ from decimal import Decimal
 
 import pytest
 
-from hodl.catalog import ETH, STETH, USDC, USDT, WBTC, WETH, pools
+from hodl.catalog import CRV, CVX, CVXCRV, ETH, STETH, USDC, USDT, WBTC, WETH, pools
 from hodl.data import Archive, Prices
 from hodl.fork import Fork
 from hodl.model import Block, Price, Reverted, Unaffordable, Unavailable
@@ -154,6 +154,21 @@ def test_route_selection_compares_net_value_after_gas():
     assert len(best.hops) == 1
     assert {len(path) for path in router.paths} == {1, 2}
     assert router.fork.gas_units == 0
+
+
+def test_three_step_paths_do_not_repeat_tokens(monkeypatch):
+    router = Router(RouteFork(), DollarPrices())
+    edges = {(CVX, WETH), (WETH, CRV), (CRV, CVXCRV), (CRV, WETH)}
+    monkeypatch.setattr(
+        router, "hops", lambda a, b: (Hop(a, b, fee=3000),) if (a, b) in edges else ()
+    )
+    paths = router.candidate_paths(CVX, CVXCRV)
+    assert len(paths) == 1
+    assert [(h.source, h.target) for h in paths[0]] == [
+        (CVX, WETH),
+        (WETH, CRV),
+        (CRV, CVXCRV),
+    ]
 
 
 def test_reverted_route_does_not_hide_other_supported_routes():

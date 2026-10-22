@@ -2,7 +2,8 @@
 
 Compare historical Ethereum positions that start with the same USD value of
 USDC, WBTC, native ETH, or CRV. The Python CLI models one deposit, monthly
-Curve gauge compounding, and withdrawal into the starting asset.
+Curve gauge and liquid-locker staking compounding, and withdrawal into the
+starting asset.
 
 These are historical estimates. The added position does not change later
 market activity. See [validation and sample reports](docs/verification.md) for
@@ -65,12 +66,14 @@ uv run hodl compare --start 2022-01-01 --end 2023-01-01 \
 uv run hodl list
 ```
 
-The fixed catalog contains four Curve pools, each with LP and gauge positions,
-and seven Yearn vaults. It retains retired contracts. `hodl list` prints full
+The fixed catalog contains six Curve pools, each with LP and gauge positions,
+ten Yearn vaults, and two liquid-locker staking positions. It retains retired
+contracts. `hodl list` prints full
 contract and LP addresses, versions, deployment blocks, and dates verified from
 archive state. Without RPC configuration, it prints unverified dates and returns
-status 2. The factory gauge for CRV/cvxCRV v2 resolves from historical factory
-state once at entry. A run never changes its selected gauge.
+status 2. The factory gauges for CRV/cvxCRV, CRV/yCRV, and CRV/sdCRV v2 resolve
+from historical factory state once at entry. A run never changes its selected
+gauge.
 
 ## Results and costs
 
@@ -107,6 +110,48 @@ manual gauge compounding or subtract another vault fee from this position.
 The comparison does not assume that a position migrates between winning
 strategies.
 
+The separate `yearn-eth-steth-factory-v2` strategy uses the replacement vault
+`0x5B8C556B8b2a78696F0B9B830B3d67623122E270` and the same steCRV underlying.
+Select it explicitly to compare the newer vault. Keeping both addresses avoids
+assigning a newer vault's returns to an older deposit. A retired vault can retain
+LP exposure while earning no extra LP tokens; its extra gas can then reduce its
+net return below the plain LP.
+
+### CRV liquid lockers
+
+```bash
+uv run hodl compare --start 2023-07-01 --end 2024-07-01 --assets CRV \
+  --strategy yearn-ycrv-v2 --strategy yearn-crv-ycrv-v2 \
+  --strategy convex-cvxcrv-staked --strategy stakedao-sdcrv-onchain \
+  --csv reports/crv-lockers.csv
+```
+
+| Strategy | Contract | Policy |
+|---|---|---|
+| `yearn-ycrv-v2` | `0x27B5739e22ad9033bcBf192059122d163b60349D` | Yearn yvyCRV auto-compounder; rewards and fees remain in share value |
+| `yearn-crv-ycrv-v2` | `0x6E9455D109202b426169F0d8f01A3332DAE160f3` | Yearn CRV/yCRV v2 LP vault |
+| `convex-cvxcrv-staked` | `0xaa0C3f5F7DFD688C6E646F66CD2a6B66ACdbE434` | Staked cvxCRV; fixed 50/50 reward-group weight, monthly compounding |
+| `stakedao-sdcrv-onchain` | `0x7f50786A0b15723D741727882ee99a0BF34e3466` | Staked sdCRV; on-chain rewards, no personal SDT boost, monthly compounding |
+
+Stake DAO's row excludes voting incentives. It describes a position without
+voting or delegation. Do not use it to rank the full delegated Stake DAO strategy
+against Yearn. Historical merkle distributions can contain carried unclaimed
+rewards; their totals and displayed APRs cannot substitute for dated income.
+
+The CRV/yCRV and CRV/sdCRV v2 pools also have plain LP and gauge entries. Locker
+entries compare supported market routes with direct CRV mints after gas.
+Convex and Stake DAO mints lock immediately; actual contract incentives and gas
+apply. Stake DAO resolves its authorized mint operator at the action block.
+Exits sell at the historical market rate, including fees, price impact,
+and the derivative's discount to CRV. The engine does not assume redemption of
+yCRV, cvxCRV, or sdCRV for one CRV. It does not optimize reward weights with
+hindsight or model optional airdrop claims.
+
+Contract and reward references: [Yearn yCRV](https://docs.yearn.fi/developers/addresses/ycrv-contracts),
+[Convex wrapper](https://github.com/convex-eth/platform/blob/main/contracts/contracts/wrappers/CvxCrvStakingWrapper.sol),
+[Stake DAO addresses](https://docs.stakedao.org/addresses), and
+[Stake DAO vote distributions](https://docs.stakedao.org/vote_incentives).
+
 The final and monthly tables show starting quantity, ending quantity, ending
 USD value, net return, estimated gas costs, and gain or loss against holding
 the starting asset. Separate USDC, WBTC, ETH, CRV, and constant USD cash benchmarks
@@ -119,9 +164,11 @@ If rewards cannot cover costs, the position retains them until the next attempt.
 Missing compounding data makes later results incomplete. The final exit sells
 remaining rewards without a deposit immediately before withdrawal.
 
-Conversions search direct routes and routes through WETH, USDC, USDT, or WBTC,
-with no more than two swaps. They cover the catalog Curve pools and Uniswap V3
-fee tiers 100, 500, 3000, and 10000. The selected route maximizes output value
+Conversions search direct routes and routes through WETH, USDC, USDT, WBTC, or CRV,
+with no more than three steps. They cover the catalog Curve pools, the older
+CRV/yCRV pool, the Curve WETH/CVX and WETH/SDT reward markets, and Uniswap V3
+fee tiers 100, 500, 3000, and 10000. Catalog LP rewards, such as 3Crv, can redeem
+to a pool coin as one route step. The selected route maximizes output value
 after measured gas among supported candidates. Exact fork execution includes
 swap fees and price impact. Each V3 hop must spend its full requested input.
 The search rejects partial fills and tries other candidates. If no supported

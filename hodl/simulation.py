@@ -8,6 +8,7 @@ from decimal import Decimal, getcontext
 from importlib.metadata import version
 from pathlib import Path
 
+from hodl import staking
 from hodl.catalog import CRV, ETH, VerifiedStrategy
 from hodl.data import Archive, Prices
 from hodl.fork import Fork
@@ -25,6 +26,7 @@ from hodl.positions import (
     withdraw,
 )
 from hodl.routes import Router
+from hodl.staking import StakingReward, StakingState
 
 
 @dataclass(frozen=True)
@@ -36,7 +38,7 @@ class Execution:
     gas_usd: Decimal
     route: tuple[str, ...]
     transactions: tuple[dict, ...]
-    gauge_state: GaugeState | None = None
+    reward_state: GaugeState | StakingState | None = None
 
 
 class Simulator:
@@ -61,6 +63,7 @@ class Simulator:
             "positions",
             "routes",
             "simulation",
+            "staking",
         ):
             path = Path(__file__).parent / f"{name}.py"
             digest.update(path.name.encode())
@@ -114,7 +117,7 @@ class Simulator:
             return result
 
         raw = self.evidence("execution-v1", block, [kind, request], calculate)
-        state = raw["gauge_state"]
+        state = raw["reward_state"]
         return Execution(
             raw["amount"],
             raw["dust"],
@@ -123,7 +126,15 @@ class Simulator:
             Decimal(raw["gas_usd"]),
             tuple(raw["route"]),
             tuple(raw["transactions"]),
-            GaugeState(
+            StakingState(
+                tuple(
+                    StakingReward(Token(**r["token"]), r["integral"], r["claim_data"])
+                    for r in state["rewards"]
+                ),
+                state["checkpoint"],
+            )
+            if state is not None and "rewards" in state
+            else GaugeState(
                 state["integral"],
                 state["fraction"],
                 state["minted"],
@@ -177,7 +188,11 @@ class Simulator:
                         gas_usd,
                         (*prefix, *route),
                         tuple(fork.transactions),
-                        gauge_state(fork, verified) if verified.gauge else None,
+                        gauge_state(fork, verified)
+                        if verified.gauge
+                        else staking.capture(fork, verified.strategy)
+                        if verified.strategy.kind in ("convex", "stakedao")
+                        else None,
                     )
             reserve = max(reserve or 0, debit)
             candidate = budget - reserve
@@ -206,7 +221,7 @@ class Simulator:
         verified: VerifiedStrategy,
         target: Token,
         shares: int,
-        state: GaugeState | None,
+        state: GaugeState | StakingState | None,
         idle: dict[Token, int],
     ) -> Execution:
         def calculate() -> Execution:
@@ -215,7 +230,10 @@ class Simulator:
                 route: tuple[str, ...] = ()
                 rewards_output = 0
                 rewards: dict[Token, int] = {}
-                if state is not None:
+                if isinstance(state, StakingState):
+                    staking.restore(fork, verified.strategy, shares, state)
+                    rewards = staking.claim(fork, verified.strategy)
+                elif state is not None:
                     seed_gauge(fork, verified, shares, state)
                     rewards = claim(fork, verified)
                 else:
@@ -255,17 +273,25 @@ class Simulator:
         block: Block,
         verified: VerifiedStrategy,
         shares: int,
-        state: GaugeState,
+        state: GaugeState | StakingState,
         idle: dict[Token, int],
     ) -> Execution:
         def calculate() -> Execution:
             with Fork(self.archive, block) as fork:
-                seed_gauge(fork, verified, shares, state)
+                if isinstance(state, StakingState):
+                    staking.restore(fork, verified.strategy, shares, state)
+                else:
+                    seed_gauge(fork, verified, shares, state)
                 router = Router(fork, self.prices)
                 proceeds = 0
                 route: tuple[str, ...] = ()
                 coin = deposit_coin(verified.strategy, CRV)
-                for token, amount in claim(fork, verified).items():
+                rewards = (
+                    staking.claim(fork, verified.strategy)
+                    if isinstance(state, StakingState)
+                    else claim(fork, verified)
+                )
+                for token, amount in rewards.items():
                     if amount:
                         output, path = router.convert(token, coin, amount)
                         proceeds += output

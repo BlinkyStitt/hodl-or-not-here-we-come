@@ -173,6 +173,13 @@ def deposit(
             (underlying,),
             label="stake LP",
         )
+    if strategy.kind in ("convex", "stakedao"):
+        from hodl import staking
+
+        before = fork.balance(share_token(strategy))
+        staking.deposit(fork, strategy, underlying)
+        if fork.balance(share_token(strategy)) - before != underlying:
+            raise Unavailable("staking deposit did not credit the full token amount")
     return underlying, route
 
 
@@ -185,6 +192,16 @@ def withdraw(
 ) -> tuple[int, tuple[str, ...]]:
     strategy = verified.strategy
     underlying = shares
+    if strategy.kind in ("convex", "stakedao"):
+        from hodl import staking
+
+        before = fork.balance(strategy.underlying)
+        staking.withdraw(fork, strategy, shares)
+        if fork.balance(share_token(strategy)):
+            raise Unavailable("staking withdrawal left a position balance")
+        underlying = fork.balance(strategy.underlying) - before
+        if underlying != shares:
+            raise Unavailable("staking withdrawal did not return the full principal")
     if verified.gauge:
         fork.transact(
             verified.gauge,

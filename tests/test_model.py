@@ -110,9 +110,9 @@ def test_rewards_use_integrals_not_current_rate_and_apply_unboosted_crv():
 
 def test_catalog_contains_all_fixed_positions_and_actual_wrapped_assets():
     catalog = strategies()
-    assert len(catalog) == 15
-    assert len({s.name for s in catalog}) == 15
-    assert sum(s.kind == "gauge" for s in catalog) == 4
+    assert len(catalog) == 24
+    assert len({s.name for s in catalog}) == 24
+    assert sum(s.kind == "gauge" for s in catalog) == 6
     assert all(s.gauge is None for s in catalog if s.kind != "gauge")
     assert assets()["USD"] == USDC
     assert assets()["BTC"] == WBTC
