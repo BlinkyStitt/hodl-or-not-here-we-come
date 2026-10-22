@@ -3,7 +3,7 @@
 import hashlib
 import shutil
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from decimal import Decimal, getcontext
 from importlib.metadata import version
 from pathlib import Path
@@ -12,7 +12,15 @@ from hodl import staking
 from hodl.catalog import CRV, ETH, VerifiedStrategy
 from hodl.data import Archive, Prices
 from hodl.fork import Fork
-from hodl.model import Block, DepositLimit, Reverted, Token, Unaffordable, Unavailable
+from hodl.model import (
+    Block,
+    DepositLimit,
+    Reverted,
+    Token,
+    TokenBalance,
+    Unaffordable,
+    Unavailable,
+)
 from hodl.positions import (
     GaugeState,
     RewardState,
@@ -39,6 +47,7 @@ class Execution:
     route: tuple[str, ...]
     transactions: tuple[dict, ...]
     reward_state: GaugeState | StakingState | None = None
+    residuals: tuple[TokenBalance, ...] = ()
 
 
 class Simulator:
@@ -103,11 +112,23 @@ class Simulator:
         return wei, ETH.quantity(wei) * self.prices.at(ETH, block.timestamp).usd
 
     def execution(
-        self, fork: Fork, amount: int, dust: int, route: tuple[str, ...]
+        self,
+        fork: Fork,
+        amount: int,
+        dust: int,
+        route: tuple[str, ...],
+        residuals: tuple[TokenBalance, ...] = (),
     ) -> Execution:
         wei, usd = self.costs(fork.block, fork.gas_units)
         return Execution(
-            amount, dust, fork.gas_units, wei, usd, route, tuple(fork.transactions)
+            amount,
+            dust,
+            fork.gas_units,
+            wei,
+            usd,
+            route,
+            tuple(fork.transactions),
+            residuals=residuals,
         )
 
     def cached(self, kind: str, block: Block, request: dict, fetch) -> Execution:
@@ -150,7 +171,32 @@ class Simulator:
             )
             if state is not None
             else None,
+            tuple(
+                TokenBalance(Token(**r["token"]), r["amount"]) for r in raw["residuals"]
+            ),
         )
+
+    @staticmethod
+    def settle_rewards(
+        router: Router, target: Token, rewards: dict[Token, int]
+    ) -> tuple[int, tuple[str, ...], tuple[TokenBalance, ...]]:
+        """Sell convertible rewards and retain exact balances that round to zero."""
+        proceeds = 0
+        route: tuple[str, ...] = ()
+        residuals = []
+        for token, amount in rewards.items():
+            if not amount:
+                continue
+            try:
+                output, path = router.convert(token, target, amount)
+            except Unaffordable:
+                # Router probes revert before raising. The reward stays in the
+                # wallet; later claims can make the combined balance convertible.
+                residuals.append(TokenBalance(token, amount))
+                continue
+            proceeds += output
+            route += path
+        return proceeds, route, tuple(residuals)
 
     def funded_deposit(
         self,
@@ -241,11 +287,9 @@ class Simulator:
                 for token, amount in idle.items():
                     fork.seed(token, fork.balance(token) + amount)
                     rewards[token] = rewards.get(token, 0) + amount
-                for token, reward_amount in rewards.items():
-                    if reward_amount:
-                        converted, path = router.convert(token, target, reward_amount)
-                        rewards_output += converted
-                        route += path
+                rewards_output, route, residuals = self.settle_rewards(
+                    router, target, rewards
+                )
                 amount, path = withdraw(fork, router, verified, target, shares)
                 output = amount + rewards_output
                 _, gas_usd = self.costs(block, fork.gas_units)
@@ -253,7 +297,9 @@ class Simulator:
                 debit = target.units(gas_usd / price, round_up=True)
                 if output <= debit:
                     raise Unaffordable("withdrawal proceeds cannot cover exit gas")
-                return self.execution(fork, output - debit, 0, (*route, *path))
+                return self.execution(
+                    fork, output - debit, 0, (*route, *path), residuals
+                )
 
         return self.cached(
             "exit",
@@ -291,23 +337,17 @@ class Simulator:
                     if isinstance(state, StakingState)
                     else claim(fork, verified)
                 )
-                for token, amount in rewards.items():
-                    if amount:
-                        output, path = router.convert(token, coin, amount)
-                        proceeds += output
-                        route += path
                 for token, amount in idle.items():
                     fork.seed(token, fork.balance(token) + amount)
-                    output, path = router.convert(token, coin, amount)
-                    proceeds += output
-                    route += path
+                    rewards[token] = rewards.get(token, 0) + amount
+                proceeds, route, residuals = self.settle_rewards(router, coin, rewards)
                 if not proceeds:
                     raise Unaffordable("no rewards to compound")
                 result = self.funded_deposit(
                     fork, router, verified, coin, proceeds, route
                 )
                 # Keep unused gas funding in the reward asset.
-                return result
+                return replace(result, residuals=residuals)
 
         return self.cached(
             "compound",
