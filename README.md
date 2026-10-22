@@ -166,8 +166,9 @@ remaining rewards without a deposit immediately before withdrawal.
 
 Conversions search direct routes and routes through WETH, USDC, USDT, WBTC, or CRV,
 with no more than three steps. They cover the catalog Curve pools, the older
-CRV/yCRV pool, the Curve WETH/CVX and WETH/SDT reward markets, and Uniswap V3
-fee tiers 100, 500, 3000, and 10000. Catalog LP rewards, such as 3Crv, can redeem
+CRV/yCRV pool, the Curve WETH/CVX and WETH/SDT reward markets, the
+[crvUSD/USDC and crvUSD/USDT markets](https://api.curve.finance/api/getPools/ethereum/factory-crvusd),
+and Uniswap V3 fee tiers 100, 500, 3000, and 10000. Catalog LP rewards, such as 3Crv, can redeem
 to a pool coin as one route step. The selected route maximizes output value
 after measured gas among supported candidates. Exact fork execution includes
 swap fees and price impact. Each V3 hop must spend its full requested input.
