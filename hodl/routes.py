@@ -63,7 +63,10 @@ def mint_route(fork: Fork, token: Token) -> Mint | None:
         if actual.lower() != expected.address:
             raise Unavailable("unverified sdCRV depositor tokens")
     # These deployed generations have different public deposit interfaces.
-    if operator.lower() == "0xc1e3ca8a3921719be0ae3690a0e036feb4f69191":
+    if operator.lower() in {
+        "0xc1e3ca8a3921719be0ae3690a0e036feb4f69191",
+        "0x88c88aa6a9cedc2aff9b4ca6820292f39cc64026",
+    }:
         return Mint(
             token,
             operator,

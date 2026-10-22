@@ -1,7 +1,7 @@
 # Verification status
 
-The expanded catalog passed **134 tests** on 2026-10-22: 83 local tests and
-51 historical mainnet fork tests. All transactions ran on local Anvil forks.
+The expanded catalog passed **136 committed tests** on 2026-10-22: 82 local tests and
+54 historical mainnet fork tests. All transactions ran on local Anvil forks.
 The private archive supplied read-only historical state. The new checks cover
 the replacement ETH/stETH vault, yCRV vaults, yCRV and sdCRV pools and gauges,
 Convex cvxCRV staking, and Stake DAO sdCRV staking.
@@ -12,11 +12,19 @@ clock advance tests reward accrual; it is not a historical return estimate.
 The gauge tests use dates after each selected pool deployed. Cache tests round
 trip both gauge and staking reward state. Ruff and ty checks pass.
 
-Mint checks cover blocks 19,000,000 and 24,000,000, including both historical
-sdCRV depositors. Reward conversion checks execute three-step routes. Independent
-checks compare staking claims with public historical reward integrals. Restoring
-Stake DAO's reward checkpoint saves 17,100 gas compared with resetting it; both
+Mint checks cover blocks 19,000,000, 20,000,000, and 24,000,000, including all
+three historical sdCRV depositors. Reward conversion checks execute three-step
+routes. Independent checks compare staking claims with public historical reward
+integrals. Restoring Stake DAO's reward checkpoint saves 17,100 gas compared with
+resetting it; both
 cases pay the same rewards. The wheel and source package also build.
+
+The full suite passes after adding the intermediate sdCRV mint operator
+`0x88C88Aa6a9cedc2aff9b4cA6820292F39cc64026`. Its
+[verified deposit interface](https://etherscan.io/address/0x88C88Aa6a9cedc2aff9b4cA6820292F39cc64026#code)
+matches the earlier four-argument mint interface. The new block-20,000,000
+regression failed before this correction and now passes. Operator and token
+identity checks still reject unknown contracts.
 
 The Stake DAO adapter excludes off-chain voting distributions. These tests do
 not validate a delegated-voting total return. The Convex adapter uses the

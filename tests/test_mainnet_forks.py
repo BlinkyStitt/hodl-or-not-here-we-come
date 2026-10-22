@@ -75,7 +75,7 @@ def fixed_block(name: str) -> int:
 
 @pytest.mark.fork
 @pytest.mark.parametrize("token", [YCRV, CVXCRV, SDCRV], ids=lambda t: t.symbol)
-@pytest.mark.parametrize("number", [19_000_000, 24_000_000])
+@pytest.mark.parametrize("number", [19_000_000, 20_000_000, 24_000_000])
 def test_liquid_locker_mint_spends_crv_and_credits_tokens(archive, token, number):
     block = archive.block(number)
     amount = 1000 * 10**18
