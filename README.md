@@ -223,7 +223,9 @@ It also retains unavailable action outcomes. Use a new `--cache` path to
 reassess a failed action after the data source changes.
 
 DefiLlama price selection accepts only points at or before the block timestamp
-and no more than 24 hours old. It never substitutes a current price. CSV contains
+and no more than 24 hours old. Its hourly chart query searches one hour around
+each sample to include observations between sample times. The final selection
+still rejects future prices. It never substitutes a current price. CSV contains
 the same monthly observations as the text report. Its adjacent JSON file records
 scenario inputs, block hashes, contracts, assumptions, and dated actions.
 CSV `token_return_fraction` measures the change in starting-asset quantity;

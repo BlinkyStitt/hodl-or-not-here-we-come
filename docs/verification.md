@@ -1,6 +1,6 @@
 # Verification status
 
-The expanded catalog passed **136 committed tests** on 2026-10-22: 82 local tests and
+The expanded catalog passed **137 committed tests** on 2026-10-22: 83 local tests and
 54 historical mainnet fork tests. All transactions ran on local Anvil forks.
 The private archive supplied read-only historical state. The new checks cover
 the replacement ETH/stETH vault, yCRV vaults, yCRV and sdCRV pools and gauges,
@@ -38,6 +38,15 @@ Anvil startup in the ETH/stETH and CRV/cvxCRV v2 repeated-claim checks. Both
 checks passed on a focused host rerun. Ruff formatting, Ruff checks, ty, and
 wheel/source builds pass. The unfinished Brownie files also pass a Python
 syntax check; they remain outside the active CLI package and runtime tests.
+
+The hourly price query uses an explicit one-hour search window to retrieve
+observations between its sample times. A regression reproduces the sdCRV gap
+at 2024-11-01 and selects the prior observation while rejecting the closer
+future observation. The 24-hour freshness limit remains unchanged. The
+[official price SDK](https://github.com/DefiLlama/api-sdk) documents this search
+parameter. Live checks compared 194 historical requests: the correction
+recovered one gap and changed seven selections, all for sdCRV or cvxCRV.
+The staking comparisons must be regenerated with the new fingerprint.
 
 Price-response regressions cover timeouts, connection resets, and incomplete
 HTTP reads. Failed reads remain retryable. The CLI keeps unavailable rows in
