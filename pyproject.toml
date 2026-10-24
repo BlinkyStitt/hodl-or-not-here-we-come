@@ -9,6 +9,7 @@ description = "Reproducible Ethereum historical position comparisons"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "certifi>=2026.10.19",
     "web3==8.0.0",
     "eth-abi==6.0.0",
     "python-dotenv==1.2.3",
