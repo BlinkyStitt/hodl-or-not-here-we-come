@@ -1,9 +1,22 @@
-"""Search direct and two-swap Curve/Uniswap V3 routes at the action block."""
+"""Search bounded Curve/Uniswap V3 and liquid-locker mint routes at the block."""
 
 from dataclasses import dataclass
 from decimal import Decimal
 
-from hodl.catalog import ETH, USDC, USDT, WBTC, WETH, ZERO, Pool, pools
+from hodl.catalog import (
+    CRV,
+    CVXCRV,
+    ETH,
+    SDCRV,
+    USDC,
+    USDT,
+    WBTC,
+    WETH,
+    YCRV,
+    ZERO,
+    Pool,
+    routing_pools,
+)
 from hodl.data import Prices
 from hodl.fork import ACCOUNT, Fork
 from hodl.model import Reverted, Token, Unaffordable, Unavailable
@@ -14,14 +27,73 @@ ROUTER = "0xE592427A0AEce92De3Edee1F18E0157C05861564"
 
 
 @dataclass(frozen=True)
+class Mint:
+    token: Token
+    address: str
+    signature: str
+    types: tuple[str, ...]
+    args: tuple
+
+
+def mint_route(fork: Fork, token: Token) -> Mint | None:
+    if token not in (YCRV, CVXCRV, SDCRV):
+        return None
+    if fork.rpc("eth_getCode", [token.address, "latest"]) == "0x":
+        return None
+    if token == YCRV:
+        return Mint(
+            token,
+            token.address,
+            "mint(uint256,address)",
+            ("uint256", "address"),
+            (ACCOUNT,),
+        )
+    if token == CVXCRV:
+        return Mint(
+            token,
+            "0x8014595F2AB54cD7c604B00E9fb932176fDc86Ae",
+            "deposit(uint256,bool)",
+            ("uint256", "bool"),
+            (True,),
+        )
+    # sdCRV changed depositors. Resolve its authorized operator at this block.
+    operator = fork.call(token.address, "operator()", returns=("address",))
+    for getter, expected in (("token()", CRV), ("minter()", SDCRV)):
+        actual = fork.call(operator, getter, returns=("address",))
+        if actual.lower() != expected.address:
+            raise Unavailable("unverified sdCRV depositor tokens")
+    # These deployed generations have different public deposit interfaces.
+    if operator.lower() == "0xc1e3ca8a3921719be0ae3690a0e036feb4f69191":
+        return Mint(
+            token,
+            operator,
+            "deposit(uint256,bool,bool,address)",
+            ("uint256", "bool", "bool", "address"),
+            (True, False, ACCOUNT),
+        )
+    if operator.lower() == "0xa50cb9dffcc740ee6b6f2d4b3cbc3a876b28c335":
+        return Mint(
+            token,
+            operator,
+            "deposit(uint256,address)",
+            ("uint256", "address"),
+            (ACCOUNT,),
+        )
+    raise Unavailable(f"unverified sdCRV mint operator: {operator}")
+
+
+@dataclass(frozen=True)
 class Hop:
     source: Token
     target: Token
     pool: Pool | None = None
     fee: int = 0
+    mint: Mint | None = None
 
     @property
     def label(self) -> str:
+        if self.mint:
+            return f"CRV -> {self.target.symbol} (mint {self.mint.address})"
         venue = (
             f"Curve {self.pool.name} {self.pool.address}"
             if self.pool
@@ -53,14 +125,20 @@ class Router:
         if key in self.available:
             return self.available[key]
         result = []
-        for pool in pools():
+        mint = mint_route(self.fork, target) if source == CRV else None
+        if mint is not None:
+            if self.fork.rpc("eth_getCode", [mint.address, "latest"]) != "0x":
+                result.append(Hop(source, target, mint=mint))
+        for pool in routing_pools():
             coins = tuple(canonical(c) for c in pool.coins)
-            if source in coins and target in coins:
+            if (source in coins or source == pool.lp) and target in coins:
                 code = self.fork.rpc("eth_getCode", [pool.address, "latest"])
                 if code != "0x":
                     result.append(
                         Hop(
-                            pool.coins[coins.index(source)],
+                            source
+                            if source == pool.lp
+                            else pool.coins[coins.index(source)],
                             pool.coins[coins.index(target)],
                             pool,
                         )
@@ -82,8 +160,37 @@ class Router:
     def execute_hop(self, hop: Hop, amount: int) -> int:
         before = self.fork.balance(hop.target)
         gas_before = self.fork.gas_units
-        if hop.pool:
+        if hop.mint:
+            mint = hop.mint
+            source_before = self.fork.balance(hop.source)
+            self.fork.approve(hop.source, mint.address, amount)
+            self.fork.transact(
+                mint.address,
+                mint.signature,
+                mint.types,
+                (amount, *mint.args),
+                label=hop.label,
+            )
+            if source_before - self.fork.balance(hop.source) != amount:
+                raise Reverted("mint did not spend the requested CRV amount")
+        elif hop.pool:
             pool = hop.pool
+            if hop.source == pool.lp:
+                self.fork.transact(
+                    pool.address,
+                    f"remove_liquidity_one_coin(uint256,{pool.index_type},uint256)",
+                    ("uint256", pool.index_type, "uint256"),
+                    (amount, pool.coins.index(hop.target), 0),
+                    label=hop.label,
+                )
+                output = self.fork.balance(hop.target) - before
+                if hop.target == ETH:
+                    output += (
+                        self.fork.gas_units - gas_before
+                    ) * self.fork.archive.gas_price(self.fork.block)
+                if output <= 0:
+                    raise Unaffordable("LP redemption rounds to zero")
+                return output
             i, j = pool.coins.index(hop.source), pool.coins.index(hop.target)
             index_type = pool.index_type
             quote = self.fork.call(
@@ -185,17 +292,7 @@ class Router:
         if source == target:
             return Route((), amount, 0, target.quantity(amount) * price)
         a, b = canonical(source), canonical(target)
-        candidates: list[tuple[Hop, ...]] = (
-            [()] if a == b else [(h,) for h in self.hops(a, b)]
-        )
-        if a != b:
-            for via in (WETH, USDC, USDT, WBTC):
-                if via not in (a, b):
-                    candidates.extend(
-                        (first, second)
-                        for first in self.hops(a, via)
-                        for second in self.hops(via, b)
-                    )
+        candidates = [()] if a == b else self.candidate_paths(a, b)
         gas_price = self.fork.archive.gas_price(self.fork.block)
         eth_price = self.prices.at(ETH, self.fork.block.timestamp).usd
         best = None
@@ -233,6 +330,20 @@ class Router:
                 f"no supported route {source.symbol}->{target.symbol}: {reason}"
             )
         return best
+
+    def candidate_paths(self, source: Token, target: Token) -> list[tuple[Hop, ...]]:
+        """All simple paths with at most three steps through fixed intermediates."""
+
+        def visit(current: Token, seen: tuple[Token, ...], path: tuple[Hop, ...]):
+            for hop in self.hops(current, target):
+                yield (*path, hop)
+            if len(path) < 2:
+                for via in (WETH, USDC, USDT, WBTC, CRV):
+                    if via not in (*seen, target):
+                        for hop in self.hops(current, via):
+                            yield from visit(via, (*seen, via), (*path, hop))
+
+        return list(visit(source, (source,), ()))
 
     def convert(
         self, source: Token, target: Token, amount: int

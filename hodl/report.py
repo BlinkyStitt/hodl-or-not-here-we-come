@@ -41,7 +41,10 @@ def assumptions() -> tuple[str, ...]:
             "The added position does not change later market activity, "
             "supplies, or reward integrals."
         ),
-        "Routes cover the catalog Curve pools and Uniswap V3, with at most two swaps.",
+        (
+            "Routes cover fixed Curve markets, Uniswap V3, and locker mints; "
+            "at most three steps."
+        ),
         (
             "Swap execution includes fees and price impact; these are not "
             "exchange-wide best-route claims."
@@ -69,6 +72,16 @@ def assumptions() -> tuple[str, ...]:
         (
             "Yearn share value already includes reported fees and rewards. No "
             "extra yield is added."
+        ),
+        (
+            "Convex cvxCRV staking uses a fixed 50/50 reward weight. Stake DAO "
+            "sdCRV includes on-chain gauge rewards only, with no personal boost "
+            "or voting incentives. It is not a delegated-voting return."
+        ),
+        (
+            "Liquid-locker entries compare markets and direct CRV mints; exits sell "
+            "them at the historical market rate. No 1:1 redemption is assumed. "
+            "Manual staking rewards compound monthly when they cover gas."
         ),
         (
             "Unavailable or incomplete rows are not complete net outcomes; "

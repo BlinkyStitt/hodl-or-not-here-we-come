@@ -112,7 +112,7 @@ def test_gauge_state_is_captured_before_the_deposit_snapshot_is_restored(monkeyp
     monkeypatch.setattr("hodl.simulation.gauge_state", capture)
     result = simulator.funded_deposit(fork, router, verified, USDC, 100 * 10**6)
     assert result.amount == 90 * 10**6
-    assert result.gauge_state == expected
+    assert result.reward_state == expected
     assert result.gas_usd == 10
     assert fork.transactions == []
     assert fork.gas_units == 0

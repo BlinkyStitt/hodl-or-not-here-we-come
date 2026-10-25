@@ -9,6 +9,7 @@ from hodl.data import Archive, Prices
 from hodl.model import Block, Unaffordable, Unavailable
 from hodl.positions import GaugeState, RewardState
 from hodl.simulation import Execution, Simulator
+from hodl.staking import StakingReward, StakingState
 
 
 def test_display_changes_preserve_action_cache_but_accounting_changes_do_not(
@@ -50,13 +51,22 @@ def test_display_changes_preserve_action_cache_but_accounting_changes_do_not(
     cache.close()
 
 
-def test_cached_action_and_unaffordable_result_reproduce_offline(tmp_path):
+@pytest.mark.parametrize("staking", [False, True])
+def test_cached_action_and_unaffordable_result_reproduce_offline(tmp_path, staking):
     path = tmp_path / "evidence.sqlite"
     cache = Cache(path)
     block = Block(14_000_000, "hash", 1640995200)
     simulator = Simulator(Archive("http://unused.invalid", cache), Prices(cache))
-    state = GaugeState(
-        10**20, 12345, 12300, block.timestamp, (RewardState(CRV, 42, (17 << 128) + 9),)
+    state = (
+        StakingState((StakingReward(CRV, 42, (17 << 128) + 9),), block.timestamp)
+        if staking
+        else GaugeState(
+            10**20,
+            12345,
+            12300,
+            block.timestamp,
+            (RewardState(CRV, 42, (17 << 128) + 9),),
+        )
     )
     expected = Execution(123, 2, 50000, 50000, Decimal("0.12"), ("route",), (), state)
     assert simulator.cached("enter", block, {}, lambda: expected) == expected

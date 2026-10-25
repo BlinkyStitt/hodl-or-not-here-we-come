@@ -164,7 +164,7 @@ def compare(
                     raise Unavailable("starting amount rounds to zero")
                 entry = simulator.enter(start, verified, token, initial)
                 position = Position(entry.amount, entry.dust)
-                state = entry.gauge_state
+                state = entry.reward_state
                 events.append(action("entry", scenario.start, start, entry))
             except Unavailable as exc:
                 failure = str(exc)
@@ -192,7 +192,7 @@ def compare(
                         position.shares += compound.amount
                         coin = deposit_coin(strategy, CRV)
                         position.idle = {coin: compound.dust} if compound.dust else {}
-                        state = compound.gauge_state
+                        state = compound.reward_state
                         events.append(action("compound", date, block, compound))
                     except Unaffordable as exc:
                         note = "compounding skipped; rewards retained: " + str(exc)

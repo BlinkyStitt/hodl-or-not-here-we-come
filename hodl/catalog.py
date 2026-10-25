@@ -14,6 +14,10 @@ DAI = Token("DAI", "0x6B175474E89094C44Da98b954EedeAC495271d0F", 18)
 USDT = Token("USDT", "0xdAC17F958D2ee523a2206206994597C13D831ec7", 6)
 STETH = Token("stETH", "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", 18)
 CVXCRV = Token("cvxCRV", "0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7", 18)
+YCRV = Token("yCRV", "0xFCc5c47bE19d06BF83eB04298b026F81069ff65b", 18)
+SDCRV = Token("sdCRV", "0xD1b5651E55D4CeeD36251c61c50C889B36F6abB5", 18)
+CVX = Token("CVX", "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B", 18)
+SDT = Token("SDT", "0x73968b9a57c6E53d41345FD57a6E6ae27d6CDB2F", 18)
 CURVE_FACTORY = "0xB9fC157394Af804a3578134A6585C0dc9cc990d4"
 ADDRESS_PROVIDER = "0x0000000022D53366457F9d5E68Ec105046FC4383"
 MINTER = "0xd061D61a4d941c39E5453435B6345Dc261C2fcE0"
@@ -99,11 +103,62 @@ def pools() -> tuple[Pool, ...]:
             None,
             "factory",
         ),
+        Pool(
+            "crv-ycrv-v2",
+            "0x99f5aCc8EC2Da2BC0771c32814EFF52b712de1E5",
+            Token("yCRV-f", "0x99f5aCc8EC2Da2BC0771c32814EFF52b712de1E5", 18),
+            (CRV, YCRV),
+            "factory-plain",
+            None,
+            "factory",
+        ),
+        Pool(
+            "crv-sdcrv-v2",
+            "0xCA0253A98D16e9C1e3614CaFDA19318EE69772D0",
+            Token("sdCRV-f", "0xCA0253A98D16e9C1e3614CaFDA19318EE69772D0", 18),
+            (CRV, SDCRV),
+            "factory-plain",
+            None,
+            "factory",
+        ),
+    )
+
+
+def routing_pools() -> tuple[Pool, ...]:
+    """Position pools plus historical markets used to convert staking rewards."""
+    return pools() + (
+        Pool(
+            "eth-cvx",
+            "0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4",
+            Token("cvxeth", "0x3A283D9c08E8b55966afb64C515f5143cf907611", 18),
+            (WETH, CVX),
+            "crypto-v2",
+            None,
+            "",
+        ),
+        Pool(
+            "eth-sdt",
+            "0xfB8814D005C5f32874391e888da6eB2fE7a27902",
+            Token("sdteth", "0x6359B6d3e327c497453d4376561eE276c6933323", 18),
+            (WETH, SDT),
+            "crypto-v2",
+            None,
+            "",
+        ),
+        Pool(
+            "crv-ycrv-v1",
+            "0x453D92C7d4263201C69aACfaf589Ed14202d83a4",
+            Token("yCRV-f-v1", "0x453D92C7d4263201C69aACfaf589Ed14202d83a4", 18),
+            (CRV, YCRV),
+            "factory-plain",
+            None,
+            "factory",
+        ),
     )
 
 
 def strategies() -> tuple[Strategy, ...]:
-    three, tri, steth, cvx = pools()
+    three, tri, steth, cvx, ycrv, sdcrv = pools()
     curve = tuple(
         Strategy(
             f"curve-{p.name}-{kind}",
@@ -114,7 +169,7 @@ def strategies() -> tuple[Strategy, ...]:
             p,
             p.gauge if kind == "gauge" else None,
         )
-        for p in (three, tri, steth, cvx)
+        for p in (three, tri, steth, cvx, ycrv, sdcrv)
         for kind in ("lp", "gauge")
     )
     vaults = (
@@ -143,17 +198,52 @@ def strategies() -> tuple[Strategy, ...]:
             cvx,
         ),
         ("usd-v3", "0x696d02Db93291651ED510704c9b286841d506987", "3.0.4", USDC, None),
+        (
+            "eth-steth-factory-v2",
+            "0x5B8C556B8b2a78696F0B9B830B3d67623122E270",
+            "0.4.5",
+            steth.lp,
+            steth,
+        ),
+        ("ycrv-v2", "0x27B5739e22ad9033bcBf192059122d163b60349D", "0.4.3", YCRV, None),
+        (
+            "crv-ycrv-v2",
+            "0x6E9455D109202b426169F0d8f01A3332DAE160f3",
+            "0.4.6",
+            ycrv.lp,
+            ycrv,
+        ),
     )
-    return curve + tuple(
+    staking = (
         Strategy(
-            "yearn-" + name,
-            address,
-            "v3" if version.startswith("3.") else "v2",
-            version,
-            token,
-            pool,
+            "convex-cvxcrv-staked",
+            "0xaa0C3f5F7DFD688C6E646F66CD2a6B66ACdbE434",
+            "convex",
+            "cvxcrv-wrapper-50-50",
+            CVXCRV,
+        ),
+        Strategy(
+            "stakedao-sdcrv-onchain",
+            "0x7f50786A0b15723D741727882ee99a0BF34e3466",
+            "stakedao",
+            "sdcrv-gauge-no-vote-incentives",
+            SDCRV,
+        ),
+    )
+    return (
+        curve
+        + staking
+        + tuple(
+            Strategy(
+                "yearn-" + name,
+                address,
+                "v3" if version.startswith("3.") else "v2",
+                version,
+                token,
+                pool,
+            )
+            for name, address, version, token, pool in vaults
         )
-        for name, address, version, token, pool in vaults
     )
 
 
@@ -184,6 +274,16 @@ def verify(archive: Archive, strategy: Strategy, block: Block) -> VerifiedStrate
             raise Unavailable(
                 f"unverified vault version: {version}; expected {strategy.version}"
             )
+    if strategy.kind in ("convex", "stakedao"):
+        getter = "cvxCrv()" if strategy.kind == "convex" else "staking_token()"
+        underlying = archive.call(block, strategy.address, getter, returns=("address",))
+        if underlying.lower() != strategy.underlying.address.lower():
+            raise Unavailable("staking underlying differs from the fixed catalog")
+        if (
+            archive.call(block, underlying, "decimals()")
+            != strategy.underlying.decimals
+        ):
+            raise Unavailable("staking token decimals differ from the fixed catalog")
     if strategy.pool:
         pool = strategy.pool
         if pool.version == "crypto-v2":

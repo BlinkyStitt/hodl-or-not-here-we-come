@@ -6,7 +6,20 @@ from decimal import Decimal
 import pytest
 
 from hodl.cache import Cache
-from hodl.catalog import CRV, ETH, USDC, strategies, verify
+from hodl.catalog import (
+    CRV,
+    CVX,
+    CVXCRV,
+    ETH,
+    SDCRV,
+    SDT,
+    USDC,
+    YCRV,
+    Strategy,
+    routing_pools,
+    strategies,
+    verify,
+)
 from hodl.config import rpc_url
 from hodl.data import Archive, Prices
 from hodl.fork import ACCOUNT, Fork
@@ -22,7 +35,7 @@ from hodl.positions import (
     seed_gauge,
     withdraw,
 )
-from hodl.routes import Router
+from hodl.routes import Hop, Router, mint_route
 
 
 class UnitPrices(Prices):
@@ -52,9 +65,56 @@ def archive(tmp_path):
 def fixed_block(name: str) -> int:
     if name == "yearn-usd-v3":
         return 24_400_000
-    if "crv-cvxcrv" in name:
+    if any(
+        part in name
+        for part in ("crv-cvxcrv", "ycrv", "sdcrv", "convex-", "eth-steth-factory")
+    ):
         return 19_000_000
     return 14_000_000
+
+
+@pytest.mark.fork
+@pytest.mark.parametrize("token", [YCRV, CVXCRV, SDCRV], ids=lambda t: t.symbol)
+@pytest.mark.parametrize("number", [19_000_000, 24_000_000])
+def test_liquid_locker_mint_spends_crv_and_credits_tokens(archive, token, number):
+    block = archive.block(number)
+    amount = 1000 * 10**18
+    with Fork(archive, block) as fork:
+        fork.seed(CRV, amount)
+        mint = mint_route(fork, token)
+        assert mint is not None
+        output = Router(fork, UnitPrices()).execute_hop(
+            Hop(CRV, mint.token, mint=mint), amount
+        )
+        assert fork.balance(CRV) == 0
+        assert output == fork.balance(mint.token)
+        assert (
+            output >= amount
+        )  # Lock incentives can add tokens; no redemption implied.
+
+
+@pytest.mark.fork
+@pytest.mark.parametrize("pool", routing_pools()[-3:], ids=lambda p: p.name)
+def test_reward_route_pool_identity(archive, pool):
+    block = archive.block(19_000_000)
+    verify(
+        archive,
+        Strategy(pool.name, pool.address, "lp", pool.version, pool.lp, pool),
+        block,
+    )
+
+
+@pytest.mark.fork
+@pytest.mark.parametrize("source,target", [(CVX, CVXCRV), (SDT, SDCRV)])
+def test_reward_conversion_can_use_three_steps(archive, source, target):
+    block = archive.block(19_000_000)
+    amount = 100 * 10**18
+    with Fork(archive, block) as fork:
+        fork.seed(source, amount)
+        output, route = Router(fork, UnitPrices()).convert(source, target, amount)
+        assert fork.balance(source) == 0
+        assert output == fork.balance(target) > 0
+        assert route
 
 
 def unclaimed_state(strategy, block, integrals):
@@ -154,7 +214,7 @@ def test_integrals_independently_match_real_gauge_claims(archive, strategy):
 def test_repeated_gauge_claims_restore_state_and_receipt_gas(archive, strategy):
     numbers = (
         (18_994_253, 19_215_377, 19_422_438)
-        if "crv-cvxcrv" in strategy.name
+        if fixed_block(strategy.name) >= 19_000_000
         else (13_916_165, 14_116_761, 14_297_758)
     )
     start, first, second = (archive.block(number) for number in numbers)

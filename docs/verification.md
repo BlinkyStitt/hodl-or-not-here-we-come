@@ -1,5 +1,29 @@
 # Verification status
 
+The expanded catalog passed **134 tests** on 2026-10-22: 83 local tests and
+51 historical mainnet fork tests. All transactions ran on local Anvil forks.
+The private archive supplied read-only historical state. The new checks cover
+the replacement ETH/stETH vault, yCRV vaults, yCRV and sdCRV pools and gauges,
+Convex cvxCRV staking, and Stake DAO sdCRV staking.
+
+Both staking adapters reproduce claims after account-state restoration, reject
+double claims, and return the full staked principal. A controlled one-hour fork
+clock advance tests reward accrual; it is not a historical return estimate.
+The gauge tests use dates after each selected pool deployed. Cache tests round
+trip both gauge and staking reward state. Ruff and ty checks pass.
+
+Mint checks cover blocks 19,000,000 and 24,000,000, including both historical
+sdCRV depositors. Reward conversion checks execute three-step routes. Independent
+checks compare staking claims with public historical reward integrals. Restoring
+Stake DAO's reward checkpoint saves 17,100 gas compared with resetting it; both
+cases pay the same rewards. The wheel and source package also build.
+
+The Stake DAO adapter excludes off-chain voting distributions. These tests do
+not validate a delegated-voting total return. The Convex adapter uses the
+deployed wrapper's fixed 50/50 reward weights, not an optimized allocation.
+
+## Earlier validation
+
 All **103 tests have passed**: 80 local tests and 23 fixed-block mainnet tests.
 The latest full run passed 101 tests. Archive RPC transport failures prevented
 Anvil startup in the ETH/stETH and CRV/cvxCRV v2 repeated-claim checks. Both
