@@ -49,6 +49,12 @@ def historical_hardfork(block: Block) -> str:
     return "frontier"
 
 
+class ArchiveHTTPServer(ThreadingHTTPServer):
+    # Anvil opens concurrent account reads during fork startup. Use the OS
+    # backlog, as TCPServer does on Python 3.15, rather than five connections.
+    request_queue_size = socket.SOMAXCONN
+
+
 class ReadBridge:
     """Cache Anvil's archive reads in SQLite and reject every remote mutation."""
 
@@ -77,7 +83,7 @@ class ReadBridge:
                     # A fork can finish or time out while an archive read is pending.
                     self.close_connection = True
 
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.server = ArchiveHTTPServer(("127.0.0.1", 0), Handler)
         self.thread = threading.Thread(target=self.server.serve_forever, daemon=True)
         self.thread.start()
 
