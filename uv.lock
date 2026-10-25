@@ -772,6 +772,7 @@ name = "hodl-or-not"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "certifi" },
     { name = "eth-abi" },
     { name = "python-dotenv" },
     { name = "web3" },
@@ -786,6 +787,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "certifi", specifier = ">=2026.10.19" },
     { name = "eth-abi", specifier = "==6.0.0" },
     { name = "python-dotenv", specifier = "==1.2.3" },
     { name = "web3", specifier = "==8.0.0" },
