@@ -6,7 +6,7 @@ import pytest
 from hodl.cache import Cache
 from hodl.catalog import CRV
 from hodl.data import Archive, Prices
-from hodl.model import Block, Unaffordable, Unavailable
+from hodl.model import Block, TokenBalance, Unaffordable, Unavailable
 from hodl.positions import GaugeState, RewardState
 from hodl.simulation import Execution, Simulator
 from hodl.staking import StakingReward, StakingState
@@ -68,7 +68,17 @@ def test_cached_action_and_unaffordable_result_reproduce_offline(tmp_path, staki
             (RewardState(CRV, 42, (17 << 128) + 9),),
         )
     )
-    expected = Execution(123, 2, 50000, 50000, Decimal("0.12"), ("route",), (), state)
+    expected = Execution(
+        123,
+        2,
+        50000,
+        50000,
+        Decimal("0.12"),
+        ("route",),
+        (),
+        state,
+        (TokenBalance(CRV, 17),),
+    )
     assert simulator.cached("enter", block, {}, lambda: expected) == expected
 
     def unaffordable():

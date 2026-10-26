@@ -1,13 +1,16 @@
 from dataclasses import replace
+from decimal import Decimal
 
 import pytest
 
 from hodl import staking
 from hodl.cache import Cache
-from hodl.catalog import SDT, strategies, verify
+from hodl.catalog import CRV, SDT, pools, strategies, verify
 from hodl.config import rpc_url
-from hodl.data import Archive
+from hodl.data import Archive, Prices
 from hodl.fork import ACCOUNT, Fork
+from hodl.model import Price
+from hodl.simulation import Simulator
 
 
 @pytest.mark.fork
@@ -111,4 +114,45 @@ def test_historical_staking_claims_match_public_integral_changes(tmp_path, name)
                 ) // 10**18
             assert paid == expected
         assert any(actual.values())
+    cache.close()
+
+
+class UnitPrices(Prices):
+    def __init__(self):
+        pass
+
+    def at(self, token, timestamp):
+        return Price(Decimal(1), timestamp, "test-only unit price")
+
+
+@pytest.mark.fork
+def test_staking_exit_keeps_rounding_dust_without_blocking_principal(tmp_path):
+    url = rpc_url()
+    if not url:
+        pytest.skip("HODL_RPC_URL is required")
+    cache = Cache(tmp_path / "dust.sqlite")
+    archive = Archive(url, cache)
+    archive.check_mainnet()
+    start, end = (archive.block(n) for n in (20_207_948, 20_429_972))
+    strategy = next(s for s in strategies() if s.name == "convex-cvxcrv-staked")
+    verified = verify(archive, strategy, start)
+    shares = 1000 * 10**18
+    with Fork(archive, start) as fork:
+        fork.seed(strategy.underlying, shares)
+        staking.deposit(fork, strategy, shares)
+        state = staking.capture(fork, strategy)
+    with Fork(archive, end) as fork:
+        staking.restore(fork, strategy, shares, state)
+        rewards = staking.claim(fork, strategy)
+    three_crv = pools()[0].lp
+    assert 0 < rewards[three_crv] < 10**12
+    result = Simulator(archive, UnitPrices()).exit(
+        end, verified, CRV, shares, state, {}
+    )
+    assert result.amount > 0
+    assert {(r.token, r.amount) for r in result.residuals} == {
+        (three_crv, rewards[three_crv])
+    }
+    assert any(t["label"] == "unstake cvxCRV" for t in result.transactions)
+    assert result.gas_units == sum(t["gas_units"] for t in result.transactions)
     cache.close()

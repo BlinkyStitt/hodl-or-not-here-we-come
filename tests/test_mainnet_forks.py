@@ -8,6 +8,7 @@ import pytest
 from hodl.cache import Cache
 from hodl.catalog import (
     CRV,
+    CRVUSD,
     CVX,
     CVXCRV,
     ETH,
@@ -16,6 +17,7 @@ from hodl.catalog import (
     USDC,
     YCRV,
     Strategy,
+    pools,
     routing_pools,
     strategies,
     verify,
@@ -75,7 +77,7 @@ def fixed_block(name: str) -> int:
 
 @pytest.mark.fork
 @pytest.mark.parametrize("token", [YCRV, CVXCRV, SDCRV], ids=lambda t: t.symbol)
-@pytest.mark.parametrize("number", [19_000_000, 24_000_000])
+@pytest.mark.parametrize("number", [19_000_000, 20_000_000, 24_000_000])
 def test_liquid_locker_mint_spends_crv_and_credits_tokens(archive, token, number):
     block = archive.block(number)
     amount = 1000 * 10**18
@@ -94,7 +96,7 @@ def test_liquid_locker_mint_spends_crv_and_credits_tokens(archive, token, number
 
 
 @pytest.mark.fork
-@pytest.mark.parametrize("pool", routing_pools()[-3:], ids=lambda p: p.name)
+@pytest.mark.parametrize("pool", routing_pools()[len(pools()) :], ids=lambda p: p.name)
 def test_reward_route_pool_identity(archive, pool):
     block = archive.block(19_000_000)
     verify(
@@ -275,3 +277,19 @@ def test_repeated_gauge_claims_restore_state_and_receipt_gas(archive, strategy):
         f"{strategy.name}: repeated CRV claim gas={repeated_gas}, "
         f"reset-counter gas={first_write_gas}, rewards={rewards}"
     )
+
+
+@pytest.mark.fork
+@pytest.mark.parametrize("target", [CRV, CVXCRV, SDCRV], ids=lambda t: t.symbol)
+@pytest.mark.parametrize("number", [21_089_068, 26_230_066])
+def test_crvusd_reward_conversion_at_staking_boundary(archive, target, number):
+    source = CRVUSD
+    # Actual sdCRV reward amount at the November 2024 comparison boundary.
+    amount = 48_482_534_210_147_964_407
+    block = archive.block(number)
+    with Fork(archive, block) as fork:
+        fork.seed(source, amount)
+        output, route = Router(fork, UnitPrices()).convert(source, target, amount)
+        assert fork.balance(source) == 0
+        assert output == fork.balance(target) > 0
+        assert route

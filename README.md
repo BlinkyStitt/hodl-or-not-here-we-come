@@ -161,13 +161,20 @@ Each monthly value estimates an exit from the retained shares. It does not
 reopen the position. Entry costs occur once. Monthly gauge compounding claims
 and sells rewards, deducts costs, buys LP tokens, and stakes the new LP tokens.
 If rewards cannot cover costs, the position retains them until the next attempt.
+Rewards that round to zero on every supported conversion stay in the wallet.
+A later compound combines them with new claims. They do not block conversion of
+other rewards or withdrawal of the principal. Reports list any final unsold
+rewards in exact raw units and exclude them from reported starting-asset proceeds.
+The CSV `unsold_rewards` field and JSON actions preserve their token addresses
+and amounts. Missing route data and failed principal exits still remain unavailable.
 Missing compounding data makes later results incomplete. The final exit sells
-remaining rewards without a deposit immediately before withdrawal.
+convertible rewards without a deposit immediately before withdrawal.
 
 Conversions search direct routes and routes through WETH, USDC, USDT, WBTC, or CRV,
 with no more than three steps. They cover the catalog Curve pools, the older
-CRV/yCRV pool, the Curve WETH/CVX and WETH/SDT reward markets, and Uniswap V3
-fee tiers 100, 500, 3000, and 10000. Catalog LP rewards, such as 3Crv, can redeem
+CRV/yCRV pool, the Curve WETH/CVX and WETH/SDT reward markets, the
+[crvUSD/USDC and crvUSD/USDT markets](https://api.curve.finance/api/getPools/ethereum/factory-crvusd),
+and Uniswap V3 fee tiers 100, 500, 3000, and 10000. Catalog LP rewards, such as 3Crv, can redeem
 to a pool coin as one route step. The selected route maximizes output value
 after measured gas among supported candidates. Exact fork execution includes
 swap fees and price impact. Each V3 hop must spend its full requested input.
@@ -223,7 +230,9 @@ It also retains unavailable action outcomes. Use a new `--cache` path to
 reassess a failed action after the data source changes.
 
 DefiLlama price selection accepts only points at or before the block timestamp
-and no more than 24 hours old. It never substitutes a current price. CSV contains
+and no more than 24 hours old. Its hourly chart query searches one hour around
+each sample to include observations between sample times. The final selection
+still rejects future prices. It never substitutes a current price. CSV contains
 the same monthly observations as the text report. Its adjacent JSON file records
 scenario inputs, block hashes, contracts, assumptions, and dated actions.
 CSV `token_return_fraction` measures the change in starting-asset quantity;

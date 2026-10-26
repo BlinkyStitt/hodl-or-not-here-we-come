@@ -60,6 +60,12 @@ class Token:
 
 
 @dataclass(frozen=True)
+class TokenBalance:
+    token: Token
+    amount: int
+
+
+@dataclass(frozen=True)
 class Block:
     number: int
     hash: str
@@ -105,6 +111,7 @@ class Action:
     gas_usd: Decimal = Decimal(0)
     route: tuple[str, ...] = ()
     note: str = ""
+    residuals: tuple[TokenBalance, ...] = ()
 
 
 @dataclass
@@ -130,6 +137,7 @@ class Observation:
     accounting_usd: Decimal | None = None
     note: str = ""
     route: tuple[str, ...] = ()
+    residuals: tuple[TokenBalance, ...] = ()
 
 
 def parse_date(value: str) -> int:

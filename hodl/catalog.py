@@ -17,6 +17,7 @@ CVXCRV = Token("cvxCRV", "0x62B9c7356A2Dc64a1969e19C23e4f579F9810Aa7", 18)
 YCRV = Token("yCRV", "0xFCc5c47bE19d06BF83eB04298b026F81069ff65b", 18)
 SDCRV = Token("sdCRV", "0xD1b5651E55D4CeeD36251c61c50C889B36F6abB5", 18)
 CVX = Token("CVX", "0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B", 18)
+CRVUSD = Token("crvUSD", "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E", 18)
 SDT = Token("SDT", "0x73968b9a57c6E53d41345FD57a6E6ae27d6CDB2F", 18)
 CURVE_FACTORY = "0xB9fC157394Af804a3578134A6585C0dc9cc990d4"
 ADDRESS_PROVIDER = "0x0000000022D53366457F9d5E68Ec105046FC4383"
@@ -127,6 +128,24 @@ def pools() -> tuple[Pool, ...]:
 def routing_pools() -> tuple[Pool, ...]:
     """Position pools plus historical markets used to convert staking rewards."""
     return pools() + (
+        Pool(
+            "usdc-crvusd",
+            "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E",
+            Token("crvUSDUSDC-f", "0x4DEcE678ceceb27446b35C672dC7d61F30bAD69E", 18),
+            (USDC, CRVUSD),
+            "factory-plain",
+            None,
+            "factory",
+        ),
+        Pool(
+            "usdt-crvusd",
+            "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4",
+            Token("crvUSDUSDT-f", "0x390f3595bCa2Df7d23783dFd126427CCeb997BF4", 18),
+            (USDT, CRVUSD),
+            "factory-plain",
+            None,
+            "factory",
+        ),
         Pool(
             "eth-cvx",
             "0xB576491F1E6e5E62f1d8F26062Ee822B40B0E0d4",

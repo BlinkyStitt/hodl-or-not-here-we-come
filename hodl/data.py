@@ -224,10 +224,11 @@ class Prices:
         self.cache = cache
 
     def at(self, token: Token, timestamp: int) -> Price:
-        # A chart window supplies earlier points even when the closest point is later.
+        # Cover observations between hourly samples. Selection below still
+        # rejects future prices and observations more than 24 hours old.
         url = (
             f"https://coins.llama.fi/chart/{token.price_id}"
-            f"?start={timestamp - 86400}&period=1h&span=25"
+            f"?start={timestamp - 86400}&period=1h&span=25&searchWidth=1h"
         )
 
         def fetch() -> dict:

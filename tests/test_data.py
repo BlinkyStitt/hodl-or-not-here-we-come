@@ -1,12 +1,14 @@
 import json
 from decimal import Decimal
 from http.client import IncompleteRead
+from io import BytesIO
 from unittest.mock import MagicMock
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
 from hodl.cache import Cache
-from hodl.catalog import USDC
+from hodl.catalog import SDCRV, USDC
 from hodl.data import Archive, Prices, last_block_at, select_price
 from hodl.model import Block, Price, Unavailable
 
@@ -101,8 +103,46 @@ def test_price_read_failure_is_unavailable_and_can_be_retried(
         assert prices.at(USDC, 100000) == Price(
             Decimal("0.99"),
             100000,
-            f"https://coins.llama.fi/chart/{USDC.price_id}?start=13600&period=1h&span=25",
+            f"https://coins.llama.fi/chart/{USDC.price_id}"
+            "?start=13600&period=1h&span=25&searchWidth=1h",
         )
+    finally:
+        cache.close()
+
+
+def test_hourly_price_query_finds_between_grid_points_without_looking_ahead(
+    tmp_path, monkeypatch
+):
+    target = 1730419199
+    # Actual sdCRV observations around 2024-11-01. The nearest point is future.
+    points = [
+        {"timestamp": 1730406757, "price": "0.244876"},
+        {"timestamp": 1730422017, "price": "0.24833"},
+    ]
+
+    def provider(url, timeout):
+        query = parse_qs(urlsplit(url).query)
+        start = int(query["start"][0])
+        span = int(query["span"][0])
+        width = query.get("searchWidth", ["600"])[0]
+        seconds = int(width[:-1]) * 3600 if width.endswith("h") else int(width)
+        samples = range(start, start + span * 3600, 3600)
+        found = [
+            p
+            for p in points
+            if any(abs(int(p["timestamp"]) - sample) <= seconds for sample in samples)
+        ]
+        return BytesIO(
+            json.dumps({"coins": {SDCRV.price_id: {"prices": found}}}).encode()
+        )
+
+    monkeypatch.setattr("hodl.data.urlopen", provider)
+    cache = Cache(tmp_path / "evidence.sqlite")
+    try:
+        price = Prices(cache).at(SDCRV, target)
+        assert price.timestamp == 1730406757
+        assert price.usd == Decimal("0.244876")
+        assert target - 86400 <= price.timestamp <= target
     finally:
         cache.close()
 

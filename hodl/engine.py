@@ -11,6 +11,7 @@ from hodl.model import (
     Observation,
     Position,
     Scenario,
+    TokenBalance,
     Unaffordable,
     Unavailable,
     anniversaries,
@@ -30,6 +31,15 @@ class Report:
     engine: dict
 
 
+def residual_note(residuals: tuple[TokenBalance, ...]) -> str:
+    if not residuals:
+        return ""
+    balances = "; ".join(
+        f"{r.amount} raw {r.token.symbol} ({r.token.address})" for r in residuals
+    )
+    return "retained rewards excluded from reported proceeds: " + balances
+
+
 def action(kind: str, target: int, block: Block, execution) -> Action:
     return Action(
         target,
@@ -39,6 +49,8 @@ def action(kind: str, target: int, block: Block, execution) -> Action:
         execution.gas_wei,
         execution.gas_usd,
         execution.route,
+        residual_note(execution.residuals),
+        execution.residuals,
     )
 
 
@@ -192,6 +204,10 @@ def compare(
                         position.shares += compound.amount
                         coin = deposit_coin(strategy, CRV)
                         position.idle = {coin: compound.dust} if compound.dust else {}
+                        for residual in compound.residuals:
+                            position.idle[residual.token] = (
+                                position.idle.get(residual.token, 0) + residual.amount
+                            )
                         state = compound.reward_state
                         events.append(action("compound", date, block, compound))
                     except Unaffordable as exc:
@@ -242,8 +258,13 @@ def compare(
                             value - hold,
                             gas,
                             None,
-                            note,
+                            "; ".join(
+                                filter(
+                                    None, (note, residual_note(exit_result.residuals))
+                                )
+                            ),
                             exit_result.route,
+                            exit_result.residuals,
                         )
                     )
                     if date == scenario.end:

@@ -5,10 +5,18 @@ from decimal import Decimal
 
 import pytest
 
-from hodl.catalog import USDC, VerifiedStrategy, strategies
+from hodl.catalog import CRV, USDC, VerifiedStrategy, strategies
 from hodl.data import Archive, Prices
 from hodl.engine import compare
-from hodl.model import Block, Price, Scenario, Unaffordable, Unavailable, parse_date
+from hodl.model import (
+    Block,
+    Price,
+    Scenario,
+    TokenBalance,
+    Unaffordable,
+    Unavailable,
+    parse_date,
+)
 from hodl.positions import GaugeState
 from hodl.report import export_csv
 from hodl.simulation import Execution, Simulator
@@ -194,3 +202,49 @@ def test_csv_uses_same_full_values_and_has_source_manifest(setup, tmp_path):
     metadata = json.loads(path.with_suffix(".json").read_text())
     assert metadata["assets"]["USD"]["address"] == USDC.address
     assert metadata["actions"]["yearn-usdc-v2/USD"][0]["kind"] == "entry"
+
+
+def test_residual_rewards_carry_once_and_are_disclosed_in_exit_reports(setup, tmp_path):
+    class ResidualSimulator(FixtureSimulator):
+        def __init__(self):
+            super().__init__()
+            self.compound_idle = []
+            self.exit_idle = []
+
+        def compound(self, block, verified, shares, state, idle):
+            self.compound_idle.append(idle.copy())
+            result = super().compound(block, verified, shares, state, idle)
+            amount = 7 if len(self.compound_idle) == 1 else 11
+            return replace(result, residuals=(TokenBalance(CRV, amount),))
+
+        def exit(self, block, verified, target, shares, state, idle):
+            self.exit_idle.append(idle.copy())
+            result = super().exit(block, verified, target, shares, state, idle)
+            return replace(
+                result, residuals=tuple(TokenBalance(t, n) for t, n in idle.items())
+            )
+
+    simulator = ResidualSimulator()
+    report = run_fixture(setup, simulator, "curve-3pool-gauge")
+    assert simulator.compound_idle == [{}, {CRV: 7}]
+    assert simulator.exit_idle == [{CRV: 7}, {CRV: 11}, {CRV: 11}]
+    rows = [r for r in report.observations if r.strategy == "curve-3pool-gauge"]
+    assert rows[-1].end_quantity == Decimal(105)
+    assert rows[-1].residuals == (TokenBalance(CRV, 11),)
+    assert "11 raw CRV" in rows[-1].note
+    assert CRV.address in rows[-1].note
+    path = tmp_path / "residual.csv"
+    export_csv(report, path)
+    exported = [
+        r for r in csv.DictReader(path.open()) if r["strategy"] == "curve-3pool-gauge"
+    ]
+    assert json.loads(exported[-1]["unsold_rewards"]) == [
+        {
+            "token": {"symbol": "CRV", "address": CRV.address, "decimals": 18},
+            "amount": 11,
+        }
+    ]
+    metadata = json.loads(path.with_suffix(".json").read_text())
+    assert (
+        metadata["actions"]["curve-3pool-gauge/USD"][-1]["residuals"][0]["amount"] == 11
+    )
