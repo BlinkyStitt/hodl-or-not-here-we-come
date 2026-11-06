@@ -7,7 +7,7 @@ import subprocess
 import tempfile
 import threading
 import time
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -238,7 +238,7 @@ class Fork:
         return response["result"]
 
     @contextmanager
-    def snapshot(self) -> Iterator[None]:
+    def snapshot(self) -> Generator[None]:
         snapshot = self.rpc("evm_snapshot", [])
         gas, count = self.gas_units, len(self.transactions)
         try:
