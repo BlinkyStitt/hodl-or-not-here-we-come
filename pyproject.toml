@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling==1.32.0"]
+requires = ["hatchling==1.33.0"]
 build-backend = "hatchling.build"
 
 [project]
@@ -12,14 +12,14 @@ dependencies = [
     "certifi>=2026.10.19",
     "web3==8.0.0",
     "eth-abi==6.0.0",
-    "python-dotenv==1.2.3",
+    "python-dotenv==1.2.4",
 ]
 
 [project.scripts]
 hodl = "hodl.cli:main"
 
 [dependency-groups]
-dev = ["pytest==9.1.1", "ruff==0.16.6", "ty==0.0.80"]
+dev = ["pytest==9.2.0", "ruff==0.17.3", "ty==0.0.95"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["hodl"]
@@ -39,3 +39,6 @@ select = ["E", "F", "I", "UP", "B"]
 
 [tool.ty.src]
 include = ["hodl", "tests"]
+
+[tool.uv]
+exclude-newer = "7 days"
