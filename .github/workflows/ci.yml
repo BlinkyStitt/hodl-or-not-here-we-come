@@ -26,7 +26,7 @@ jobs:
       run: python3 .github/scripts/ci_changes.py
   validate:
     name: Lint, types and local fork tests
-    runs-on: ubuntu-24.04
+    runs-on: ski-kvm-hodl-or-not-here-we-come
     timeout-minutes: 15
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
