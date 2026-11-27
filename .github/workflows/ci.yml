@@ -8,7 +8,7 @@ permissions:
 jobs:
   ci_changes:
     name: Select validation paths
-    runs-on: ubuntu-latest
+    runs-on: ski-kvm-hodl-or-not-here-we-come
     permissions:
       contents: read
       pull-requests: read
@@ -52,7 +52,7 @@ jobs:
     needs:
     - ci_changes
     - validate
-    runs-on: ubuntu-latest
+    runs-on: ski-kvm-hodl-or-not-here-we-come
     permissions:
       contents: read
     steps:
